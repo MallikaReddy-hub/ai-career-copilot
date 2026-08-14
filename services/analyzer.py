@@ -63,8 +63,9 @@ def analyze_resume_vs_jd(resume_text, job_description, target_job_title="Softwar
     if gemini_key:
         ai_enhancement = get_gemini_insights(resume_text, job_description, gemini_key)
         if ai_enhancement:
-            summary_feedback = ai_enhancement.get('summary', summary_feedback)
-            if 'bullet_improvements' in ai_enhancement:
+            if 'summary' in ai_enhancement and ai_enhancement['summary']:
+                summary_feedback = ai_enhancement['summary']
+            if 'bullet_improvements' in ai_enhancement and ai_enhancement['bullet_improvements']:
                 bullet_improvements = ai_enhancement['bullet_improvements']
     
     return {
@@ -81,7 +82,6 @@ def analyze_resume_vs_jd(resume_text, job_description, target_job_title="Softwar
 def extract_skills(text):
     found = []
     for skill in TECH_SKILLS_TAXONOMY + SOFT_SKILLS:
-        # Match whole word or token boundary
         pattern = r'\b' + re.escape(skill) + r'\b'
         if re.search(pattern, text):
             found.append(skill.title())
@@ -120,7 +120,6 @@ def evaluate_ats_formatting(resume_text):
     return max(30, score), feedback
 
 def evaluate_quantified_impact(resume_text):
-    # Regex to find numbers, percentages, dollar amounts, multipliers (2x, 50%, $10k, 100ms)
     metrics_patterns = [
         r'\b\d+%\b',
         r'\$\d+(?:,\d+)*(?:\.\d+)?(?:k|m|b)?\b',
@@ -149,9 +148,37 @@ def evaluate_quantified_impact(resume_text):
     return score, unique_metrics
 
 def generate_bullet_improvements(resume_text):
-    lines = resume_text.split('\n')
+    """
+    Analyzes bullets in resume text or rewrites a single submitted bullet string.
+    """
+    lines = resume_text.strip().split('\n')
     bullet_improvements = []
     
+    # Check if single line passed
+    if len(lines) == 1 and len(lines[0]) > 10:
+        clean_text = re.sub(r'^[•\-\*\d\.]+\s*', '', lines[0].strip())
+        lower_bullet = clean_text.lower()
+        replaced = False
+        for weak in WEAK_VERBS:
+            if weak in lower_bullet:
+                revised = re.sub(r'\b' + re.escape(weak) + r'\b', 'Architected and engineered', clean_text, flags=re.IGNORECASE)
+                if not re.search(r'\d+', revised):
+                    revised += ", delivering a 30% reduction in response latency and improving system reliability."
+                bullet_improvements.append({
+                    'original': clean_text,
+                    'revised': revised,
+                    'reason': f"Replaced passive verb '{weak}' with strong engineering verbs and added measurable performance impact."
+                })
+                replaced = True
+                break
+        if not replaced:
+            bullet_improvements.append({
+                'original': clean_text,
+                'revised': f"Spearheaded {clean_text[0].lower() + clean_text[1:] if len(clean_text) > 1 else clean_text}, enhancing throughput by 25% and ensuring 99.9% uptime.",
+                'reason': "Elevated sentence structure with leadership action verbs and quantified business outcome."
+            })
+        return bullet_improvements
+
     for line in lines:
         clean = line.strip()
         if len(clean) > 20 and (clean.startswith('•') or clean.startswith('-') or clean.startswith('*') or re.match(r'^\d+\.', clean)):
@@ -194,6 +221,66 @@ def generate_summary_text(overall_score, missing_count, quantified_score, ats_sc
     else:
         return f"Moderate match ({overall_score}%). Resume requires targeted optimization to pass ATS filters for this role."
 
+def generate_cover_letter(resume_text, job_description, target_job_title="Software Engineer", tone="Professional"):
+    """
+    Generates an ATS-tailored cover letter based on candidate resume and job description.
+    Uses Gemini LLM if key is present; otherwise produces a polished, keyword-optimized template.
+    """
+    gemini_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+    if gemini_key:
+        try:
+            from google import genai
+            client = genai.Client(api_key=gemini_key)
+            prompt = f"""
+            You are an expert career coach and hiring manager. Write a compelling, ATS-optimized cover letter for the role of '{target_job_title}'.
+            
+            Tone: {tone}
+            
+            Candidate Resume Info:
+            {resume_text[:2500]}
+            
+            Target Job Description:
+            {job_description[:2500]}
+            
+            Instructions:
+            1. Create a professional, persuasive 3-4 paragraph cover letter.
+            2. Match candidate's skills directly to key job requirements.
+            3. Highlight measurable impact and technical achievements.
+            4. Keep placeholders clean like [Hiring Team / Company Name] or [Your Name].
+            5. Return ONLY the cover letter text, no markdown code fence blocks.
+            """
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            if response.text:
+                return response.text.strip()
+        except Exception:
+            pass
+
+    # Intelligent Rule-Based Fallback Generator
+    extracted_skills = extract_skills(resume_text.lower())
+    top_skills = ", ".join(extracted_skills[:4]) if extracted_skills else "Full-Stack Development, Scalable System Design, and Modern Cloud Architecture"
+    
+    tone_greeting = "Dear Hiring Manager," if tone == "Professional" else "Hello Hiring Team,"
+    
+    letter = f"""{tone_greeting}
+
+I am writing to express my strong interest in the {target_job_title} position. With a strong track record of engineering scalable applications and delivering measurable product impact, I am confident in my ability to make an immediate, positive contribution to your team.
+
+Throughout my experience, I have specialized in {top_skills}. In my previous roles, I focused on architecting resilient solutions, optimizing performance bottlenecks, and collaborating across engineering and product teams to deliver high-quality features on schedule.
+
+Your job opening stood out to me because of the opportunity to solve complex technical challenges and contribute to high-impact systems. My background in building clean, maintainable codebases aligns directly with the core requirements outlined in your description.
+
+Thank you for your time and consideration. I welcome the opportunity to discuss how my technical expertise and problem-solving mindset can support your engineering objectives.
+
+Sincerely,
+[Your Name]
+[Your Phone Number] | [Your Email]
+[LinkedIn Profile URL] | [GitHub Profile URL]"""
+
+    return letter
+
 def get_gemini_insights(resume_text, job_description, api_key):
     """Optional Gemini API integration if GOOGLE_API_KEY is available."""
     try:
@@ -218,6 +305,6 @@ def get_gemini_insights(resume_text, job_description, api_key):
         if response.text:
             cleaned = response.text.replace('```json', '').replace('```', '').strip()
             return json.loads(cleaned)
-    except Exception as e:
+    except Exception:
         pass
     return None

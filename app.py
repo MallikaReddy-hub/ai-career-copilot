@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import init_db, save_resume, save_analysis, get_analysis_history, get_analysis_by_id
 from services.pdf_parser import extract_text_from_file
-from services.analyzer import analyze_resume_vs_jd, generate_bullet_improvements
+from services.analyzer import analyze_resume_vs_jd, generate_bullet_improvements, generate_cover_letter
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload limit
@@ -129,6 +129,28 @@ def optimize_bullet():
             
         improvements = generate_bullet_improvements(bullet)
         return jsonify({'success': True, 'result': improvements[0] if improvements else None})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/cover-letter', methods=['POST'])
+def cover_letter():
+    try:
+        data = request.get_json() or {}
+        resume_text = data.get('resume_text', '').strip()
+        job_description = data.get('job_description', '').strip()
+        target_job_title = data.get('target_job_title', 'Software Engineer').strip()
+        tone = data.get('tone', 'Professional').strip()
+
+        if not resume_text and not job_description:
+            return jsonify({'success': False, 'error': 'Please provide resume details and job description.'}), 400
+
+        letter = generate_cover_letter(
+            resume_text=resume_text,
+            job_description=job_description,
+            target_job_title=target_job_title,
+            tone=tone
+        )
+        return jsonify({'success': True, 'cover_letter': letter})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

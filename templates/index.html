@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Career Copilot | ATS Resume & Job Match Intelligence</title>
-    <meta name="description" content="Production-grade AI ATS resume analyzer, skill gap scanner, and engineering bullet optimizer.">
+    <meta name="description" content="Production-grade AI ATS resume analyzer, skill gap scanner, bullet optimizer, and cover letter generator.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body data-theme="dark">
     <div class="app-container">
         <!-- Top Navigation Header -->
         <header class="navbar">
@@ -33,22 +33,44 @@
             </div>
             
             <nav class="nav-tabs">
-                <button class="nav-btn active" data-tab="tab-analyze">
+                <button class="nav-btn active" data-tab="tab-analyze" id="navAnalyze">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     Job Matcher
                 </button>
-                <button class="nav-btn" data-tab="tab-bullet">
+                <button class="nav-btn" data-tab="tab-bullet" id="navBullet">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                     Bullet Optimizer
                 </button>
-                <button class="nav-btn" data-tab="tab-history">
+                <button class="nav-btn" data-tab="tab-cover-letter" id="navCoverLetter">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    Cover Letter
+                </button>
+                <button class="nav-btn" data-tab="tab-history" id="navHistory">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     Scan History
                 </button>
             </nav>
 
-            <div class="header-status">
-                <span class="db-indicator active" id="dbStatus">Database Connected</span>
+            <div class="header-actions">
+                <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Light / Dark Mode" aria-label="Toggle Theme">
+                    <svg class="sun-icon hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+                <div class="header-status">
+                    <span class="db-indicator active" id="dbStatus">Database Connected</span>
+                </div>
             </div>
         </header>
 
@@ -62,8 +84,8 @@
                     <!-- Left Control Panel: Inputs -->
                     <div class="panel input-panel">
                         <div class="panel-header">
-                            <h2>1. Upload Resume & Job Description</h2>
-                            <p>Upload your PDF resume and target job listing to compute ATS match probability.</p>
+                            <h2>1. Upload Resume & Job Details</h2>
+                            <p>Upload your PDF/DOCX resume or paste text to benchmark against target job requirements.</p>
                         </div>
 
                         <form id="analyzeForm" enctype="multipart/form-data">
@@ -79,7 +101,7 @@
                                 <div class="drop-zone" id="dropZone">
                                     <input type="file" id="resumePdf" name="resume_pdf" accept=".pdf,.docx,.doc" class="file-input">
                                     <div class="drop-zone-content">
-                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                             <polyline points="17 8 12 3 7 8"></polyline>
                                             <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -94,7 +116,7 @@
                                 </div>
                             </div>
 
-                            <div class="divider"><span>OR PASTE TEXT</span></div>
+                            <div class="divider"><span>OR PASTE RESUME TEXT</span></div>
 
                             <!-- Text Area Fallback -->
                             <div class="form-group">
@@ -105,7 +127,7 @@
                             <!-- Job Description Input -->
                             <div class="form-group">
                                 <label for="jobDescription">Target Job Description (Required)</label>
-                                <textarea id="jobDescription" name="job_description" rows="6" placeholder="Paste the complete job description, requirements, and tech stack here..." required></textarea>
+                                <textarea id="jobDescription" name="job_description" rows="6" placeholder="Paste the target job description and requirements here..." required></textarea>
                             </div>
 
                             <button type="submit" class="btn btn-primary btn-block" id="btnSubmit">
@@ -124,8 +146,8 @@
                                 <line x1="3" y1="9" x2="21" y2="9"></line>
                                 <line x1="9" y1="21" x2="9" y2="9"></line>
                             </svg>
-                            <h3>No Analysis Generated Yet</h3>
-                            <p>Upload a resume PDF and paste a job description on the left to view overall match scores, skill gaps, and bullet recommendations.</p>
+                            <h3>Ready for Analysis</h3>
+                            <p>Upload a resume and paste a job description on the left to compute ATS compatibility, missing keywords, and recommended bullet improvements.</p>
                         </div>
 
                         <!-- Active Dashboard Results (Hidden initially) -->
@@ -135,13 +157,23 @@
                                     <h2 id="resultJobTitle">Software Engineer Match Report</h2>
                                     <span class="meta-sub" id="resultFilename">resume.pdf • 540 words</span>
                                 </div>
-                                <button class="btn btn-secondary btn-sm" id="btnReanalyze">New Analysis</button>
+                                <div class="dashboard-top-actions">
+                                    <button class="btn btn-outline btn-sm" id="btnExportPdf" title="Print or Save as PDF Report">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                        Export PDF
+                                    </button>
+                                    <button class="btn btn-outline btn-sm" id="btnCopyReport" title="Copy full analysis summary">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                        Copy Report
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" id="btnReanalyze">New Analysis</button>
+                                </div>
                             </div>
 
                             <!-- What is ATS Score Explainer Banner -->
                             <div class="ats-explainer-banner">
                                 <strong>❓ What is an ATS Score?</strong>
-                                <p>An <strong>Applicant Tracking System (ATS) Score</strong> measures how well automated resume screening software parses your PDF layout, extracts technical skills, and matches your experience against job requirements before a recruiter sees your resume.</p>
+                                <p>An <strong>Applicant Tracking System (ATS) Score</strong> measures how well automated resume screening software parses your layout, identifies key technical skills, and matches your achievements to job qualifications before a recruiter sees it.</p>
                             </div>
 
                             <!-- Key Metrics Score Cards Grid -->
@@ -160,14 +192,14 @@
                                     <span class="card-label">ATS Readability</span>
                                     <div class="metric-value text-blue" id="scoreAts">90%</div>
                                     <div class="progress-bar"><div class="progress-fill bg-blue" id="barAts" style="width: 90%;"></div></div>
-                                    <span class="card-hint">PDF Layout & Structure Clarity</span>
+                                    <span class="card-hint">PDF Layout & Contact Clarity</span>
                                 </div>
 
                                 <div class="metric-card">
                                     <span class="card-label">Quantified Impact</span>
                                     <div class="metric-value text-green" id="scoreQuant">75%</div>
                                     <div class="progress-bar"><div class="progress-fill bg-green" id="barQuant" style="width: 75%;"></div></div>
-                                    <span class="card-hint">Metrics, Numbers & Results (% / $)</span>
+                                    <span class="card-hint">Metrics, Percentages & Outcomes</span>
                                 </div>
                             </div>
 
@@ -181,21 +213,25 @@
                             <div class="quick-guide-box mb-4">
                                 <div class="guide-item">
                                     <span class="guide-badge bg-green-light">1. Matching Skills</span>
-                                    <p>Keywords present in both your resume & job listing.</p>
+                                    <p>Keywords found in both your resume & job listing.</p>
                                 </div>
                                 <div class="guide-item">
                                     <span class="guide-badge bg-amber-light">2. Missing Skills</span>
                                     <p>Required keywords missing from resume (Add these to pass ATS).</p>
                                 </div>
                                 <div class="guide-item">
-                                    <span class="guide-badge bg-blue-light">3. Recommended Revisions</span>
-                                    <p>Rewritten bullet points with stronger action verbs & metrics.</p>
+                                    <span class="guide-badge bg-blue-light">3. Improved Bullets</span>
+                                    <p>Stronger rewrites of your resume points with action verbs.</p>
                                 </div>
                             </div>
 
                             <!-- Skills Breakdown Section -->
                             <div class="skills-container">
-                                <h3>Skill Gap Analysis</h3>
+                                <div class="section-title-row">
+                                    <h3>Skill Gap Breakdown</h3>
+                                    <button class="btn btn-link btn-xs" id="btnCopyMissing">Copy Missing Skills</button>
+                                </div>
+                                
                                 <div class="skill-group">
                                     <span class="skill-header text-amber">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -219,10 +255,19 @@
 
                             <!-- Bullet Recommendations Section -->
                             <div class="bullet-section mt-4">
-                                <h3>Actionable Bullet Point Improvements</h3>
+                                <h3>Recommended Resume Bullet Point Rewrites</h3>
+                                <p class="text-muted mb-2" style="font-size: 0.83rem;">Copy and paste these improved versions into your resume to replace weak phrases:</p>
                                 <div class="bullet-cards" id="bulletCards">
                                     <!-- Dynamic Bullet Diff Cards -->
                                 </div>
+                            </div>
+
+                            <!-- Action Quick Bar -->
+                            <div class="dashboard-footer-actions mt-4">
+                                <button class="btn btn-primary" id="btnTransferToCoverLetter">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                    Generate Tailored Cover Letter for this Job
+                                </button>
                             </div>
 
                         </div>
@@ -233,11 +278,11 @@
 
 
             <!-- TAB 2: BULLET POINT OPTIMIZER -->
-            <section id="tab-bullet" class="tab-pane hidden">
+            <section id="tab-bullet" class="tab-pane">
                 <div class="panel single-panel">
                     <div class="panel-header">
                         <h2>Quick Bullet Point Optimizer</h2>
-                        <p>Paste any bullet point from your experience section to transform weak passive verbs into high-impact metric statements.</p>
+                        <p>Paste any bullet point from your resume experience section to transform weak passive verbs into high-impact metric statements.</p>
                     </div>
 
                     <div class="optimizer-box">
@@ -245,29 +290,100 @@
                             <label for="singleBulletInput">Original Resume Bullet Point</label>
                             <textarea id="singleBulletInput" rows="3" placeholder="e.g. Worked on backend APIs and database tables for user authentication." class="form-control"></textarea>
                         </div>
-                        <button class="btn btn-primary" id="btnOptimizeSingle">Rewrite & Optimize Bullet</button>
+                        <button class="btn btn-primary" id="btnOptimizeSingle">
+                            <span class="btn-text">Rewrite & Optimize Bullet</span>
+                            <div class="spinner hidden" id="spinnerBullet"></div>
+                        </button>
                     </div>
 
                     <div class="optimizer-result hidden" id="optimizerResult">
                         <div class="diff-card">
                             <div class="diff-block diff-before">
-                                <span class="diff-label">BEFORE</span>
+                                <span class="diff-label">ORIGINAL BULLET</span>
                                 <p id="optOriginalText"></p>
                             </div>
                             <div class="diff-block diff-after">
-                                <span class="diff-label">AFTER (OPTIMIZED)</span>
+                                <div class="diff-header-row">
+                                    <span class="diff-label">RECOMMENDED ATS REVISION</span>
+                                    <button class="btn btn-secondary btn-xs copy-btn" id="btnCopyOpt">Copy</button>
+                                </div>
                                 <p id="optRevisedText"></p>
-                                <button class="btn btn-secondary btn-sm copy-btn" id="btnCopyOpt">Copy Bullet</button>
                             </div>
                         </div>
-                        <p class="reason-note" id="optReasonText"></p>
+                        <div class="reason-container">
+                            <p class="reason-note" id="optReasonText"></p>
+                        </div>
                     </div>
                 </div>
             </section>
 
 
-            <!-- TAB 3: SCAN HISTORY -->
-            <section id="tab-history" class="tab-pane hidden">
+            <!-- TAB 3: COVER LETTER GENERATOR -->
+            <section id="tab-cover-letter" class="tab-pane">
+                <div class="panel single-panel">
+                    <div class="panel-header">
+                        <h2>AI Tailored Cover Letter Generator</h2>
+                        <p>Generate a compelling, ATS-optimized cover letter that highlights your relevant skills for the job.</p>
+                    </div>
+
+                    <div class="workspace-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <!-- Cover Letter Controls -->
+                        <div class="cover-input-box">
+                            <div class="form-group">
+                                <label for="clTargetRole">Target Job Title</label>
+                                <input type="text" id="clTargetRole" class="form-control" placeholder="e.g. Senior Backend Engineer" value="Software Engineer">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="clTone">Cover Letter Tone</label>
+                                <select id="clTone" class="form-control">
+                                    <option value="Professional" selected>Professional & Confident</option>
+                                    <option value="Modern">Modern & Energetic</option>
+                                    <option value="Executive">Executive & Strategic</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="clResumeText">Your Key Skills / Experience Summary</label>
+                                <textarea id="clResumeText" rows="4" class="form-control" placeholder="Paste your resume highlights or skills summary here..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="clJobDesc">Job Description Requirements</label>
+                                <textarea id="clJobDesc" rows="5" class="form-control" placeholder="Paste the target job description or requirements here..."></textarea>
+                            </div>
+
+                            <button class="btn btn-primary btn-block" id="btnGenerateCoverLetter">
+                                <span class="btn-text">Generate Tailored Cover Letter</span>
+                                <div class="spinner hidden" id="spinnerCl"></div>
+                            </button>
+                        </div>
+
+                        <!-- Generated Cover Letter Output -->
+                        <div class="cover-output-box">
+                            <div class="output-header">
+                                <h3>Generated Cover Letter</h3>
+                                <div class="output-actions">
+                                    <button class="btn btn-secondary btn-sm" id="btnCopyCoverLetter" disabled>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                        Copy Text
+                                    </button>
+                                    <button class="btn btn-outline btn-sm" id="btnDownloadCoverLetter" disabled>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        Download .txt
+                                    </button>
+                                </div>
+                            </div>
+
+                            <textarea id="coverLetterResult" class="form-control cover-letter-textarea" rows="16" placeholder="Your tailored cover letter will appear here after clicking generate..." readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- TAB 4: SCAN HISTORY -->
+            <section id="tab-history" class="tab-pane">
                 <div class="panel single-panel">
                     <div class="panel-header">
                         <h2>Saved Scan History</h2>
@@ -299,6 +415,9 @@
 
         </main>
     </div>
+
+    <!-- Global Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <!-- Application Script -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>

@@ -1,12 +1,68 @@
 // AI Career Copilot - Frontend Application Logic
 
+let lastAnalysisResult = null;
+
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     initNavigation();
     initFileUpload();
     initFormSubmission();
     initSingleOptimizer();
+    initCoverLetterGenerator();
+    initExportAndCopyActions();
     loadScanHistory();
 });
+
+// THEME TOGGLE (Dark / Light Mode)
+function initTheme() {
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    const sunIcon = toggleBtn.querySelector('.sun-icon');
+    const moonIcon = toggleBtn.querySelector('.moon-icon');
+
+    // Check saved preference or system preference
+    const savedTheme = localStorage.getItem('career_copilot_theme') || 'dark';
+    applyTheme(savedTheme);
+
+    toggleBtn.addEventListener('click', () => {
+        const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+        localStorage.setItem('career_copilot_theme', newTheme);
+        showToast(`Switched to ${newTheme === 'dark' ? 'Dark' : 'Light'} Mode`);
+    });
+
+    function applyTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        if (theme === 'light') {
+            sunIcon.classList.remove('hidden');
+            moonIcon.classList.add('hidden');
+        } else {
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
+        }
+    }
+}
+
+// TOAST NOTIFICATIONS
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <span>${escapeHtml(message)}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 // TAB NAVIGATION
 function initNavigation() {
@@ -131,7 +187,9 @@ function initFormSubmission() {
             const data = await response.json();
 
             if (data.success) {
+                lastAnalysisResult = data;
                 renderDashboard(data);
+                showToast('ATS Match Analysis Complete!');
             } else {
                 alert('Analysis Error: ' + (data.error || 'Failed to analyze resume.'));
             }
@@ -173,7 +231,7 @@ function renderDashboard(data) {
             hintOverall.textContent = "Good Match (Add missing skills)";
             hintOverall.style.color = "var(--accent-amber)";
         } else {
-            hintOverall.textContent = "Low Match (Needs Revision)";
+            hintOverall.textContent = "Needs Revision (Add keywords)";
             hintOverall.style.color = "var(--accent-red)";
         }
     }
@@ -218,12 +276,12 @@ function renderDashboard(data) {
         matchingContainer.innerHTML = '<span class="text-muted" style="font-size: 0.8rem;">No exact keyword matches found.</span>';
     }
 
-    // Bullet Recommendations Cards
+    // Bullet Recommendations Cards with individual Copy buttons
     const bulletCards = document.getElementById('bulletCards');
     bulletCards.innerHTML = '';
 
     if (data.bullet_improvements && data.bullet_improvements.length > 0) {
-        data.bullet_improvements.forEach(b => {
+        data.bullet_improvements.forEach((b, index) => {
             const card = document.createElement('div');
             card.className = 'diff-card';
             card.innerHTML = `
@@ -232,18 +290,102 @@ function renderDashboard(data) {
                     <p>${escapeHtml(b.original)}</p>
                 </div>
                 <div class="diff-block diff-after">
-                    <span class="diff-label">RECOMMENDED ATS REVISION</span>
-                    <p>${escapeHtml(b.revised)}</p>
+                    <div class="diff-header-row">
+                        <span class="diff-label">RECOMMENDED ATS REVISION</span>
+                        <button class="btn btn-secondary btn-xs" data-copy-bullet="${index}">Copy</button>
+                    </div>
+                    <p id="bulletRev_${index}">${escapeHtml(b.revised)}</p>
                 </div>
-                <div style="padding: 8px 12px; background: var(--bg-surface);">
+                <div class="reason-container">
                     <p class="reason-note">💡 ${escapeHtml(b.reason || 'Improved impact and action verbs.')}</p>
                 </div>
             `;
             bulletCards.appendChild(card);
         });
+
+        // Attach copy events to individual bullet cards
+        bulletCards.querySelectorAll('[data-copy-bullet]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = btn.getAttribute('data-copy-bullet');
+                const textElem = document.getElementById(`bulletRev_${idx}`);
+                if (textElem) {
+                    navigator.clipboard.writeText(textElem.textContent.trim());
+                    showToast('Optimized bullet copied to clipboard!');
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = 'Copy', 2000);
+                }
+            });
+        });
     } else {
         bulletCards.innerHTML = '<p class="text-muted" style="font-size: 0.85rem;">Bullet points are already well quantified.</p>';
     }
+}
+
+// EXPORT & COPY ACTION HANDLERS
+function initExportAndCopyActions() {
+    // Export PDF / Print
+    document.getElementById('btnExportPdf')?.addEventListener('click', () => {
+        window.print();
+    });
+
+    // Copy Full Report Summary
+    document.getElementById('btnCopyReport')?.addEventListener('click', () => {
+        if (!lastAnalysisResult) {
+            showToast('No active report to copy.');
+            return;
+        }
+
+        const missing = (lastAnalysisResult.missing_critical_skills || []).join(', ') || 'None';
+        const matching = (lastAnalysisResult.present_matching_skills || []).join(', ') || 'None';
+        const report = `AI Career Copilot - ATS Match Report
+Job Role: ${lastAnalysisResult.target_job_title || 'Software Engineer'}
+Match Score: ${lastAnalysisResult.overall_match_score || 0}%
+ATS Readability: ${lastAnalysisResult.ats_formatting_score || 0}%
+Quantified Impact: ${lastAnalysisResult.quantified_impact_score || 0}%
+
+Summary Verdict:
+${lastAnalysisResult.summary_feedback || ''}
+
+Matching Skills: ${matching}
+Missing Critical Skills: ${missing}
+`;
+        navigator.clipboard.writeText(report);
+        showToast('Full analysis report copied to clipboard!');
+    });
+
+    // Copy Missing Skills List
+    document.getElementById('btnCopyMissing')?.addEventListener('click', () => {
+        if (!lastAnalysisResult || !lastAnalysisResult.missing_critical_skills || lastAnalysisResult.missing_critical_skills.length === 0) {
+            showToast('No missing skills to copy.');
+            return;
+        }
+        const skillsList = lastAnalysisResult.missing_critical_skills.join(', ');
+        navigator.clipboard.writeText(skillsList);
+        showToast('Missing skills copied to clipboard!');
+    });
+
+    // Transfer from Dashboard to Cover Letter Generator
+    document.getElementById('btnTransferToCoverLetter')?.addEventListener('click', () => {
+        if (!lastAnalysisResult) return;
+
+        // Switch Tab to Cover Letter
+        document.getElementById('navCoverLetter').click();
+
+        // Populate fields
+        const targetRoleInput = document.getElementById('clTargetRole');
+        const resumeInput = document.getElementById('clResumeText');
+        const jdInput = document.getElementById('clJobDesc');
+
+        if (targetRoleInput) targetRoleInput.value = lastAnalysisResult.target_job_title || 'Software Engineer';
+        if (resumeInput) {
+            const skills = (lastAnalysisResult.present_matching_skills || []).join(', ');
+            resumeInput.value = `Target Role: ${lastAnalysisResult.target_job_title || 'Software Engineer'}\nKey Skills: ${skills}\nMatch Score: ${lastAnalysisResult.overall_match_score || 0}%`;
+        }
+        if (jdInput) {
+            const formJd = document.getElementById('jobDescription');
+            if (formJd && formJd.value) jdInput.value = formJd.value;
+        }
+    });
 }
 
 // SINGLE BULLET OPTIMIZER TAB
@@ -252,6 +394,8 @@ function initSingleOptimizer() {
     const input = document.getElementById('singleBulletInput');
     const resultBox = document.getElementById('optimizerResult');
     const copyBtn = document.getElementById('btnCopyOpt');
+    const spinner = document.getElementById('spinnerBullet');
+    const btnText = btn.querySelector('.btn-text');
 
     btn.addEventListener('click', async () => {
         const text = input.value.trim();
@@ -261,7 +405,8 @@ function initSingleOptimizer() {
         }
 
         btn.disabled = true;
-        btn.textContent = 'Optimizing...';
+        if (spinner) spinner.classList.remove('hidden');
+        if (btnText) btnText.textContent = 'Optimizing...';
 
         try {
             const res = await fetch('/api/optimize-bullet', {
@@ -276,6 +421,7 @@ function initSingleOptimizer() {
                 document.getElementById('optOriginalText').textContent = data.result.original;
                 document.getElementById('optRevisedText').textContent = data.result.revised;
                 document.getElementById('optReasonText').textContent = '💡 ' + (data.result.reason || '');
+                showToast('Bullet successfully optimized!');
             } else {
                 alert(data.error || 'Failed to optimize bullet point.');
             }
@@ -283,15 +429,92 @@ function initSingleOptimizer() {
             alert('Failed to optimize bullet.');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Rewrite & Optimize Bullet';
+            if (spinner) spinner.classList.add('hidden');
+            if (btnText) btnText.textContent = 'Rewrite & Optimize Bullet';
         }
     });
 
     copyBtn.addEventListener('click', () => {
         const revised = document.getElementById('optRevisedText').textContent;
         navigator.clipboard.writeText(revised);
+        showToast('Optimized bullet copied to clipboard!');
         copyBtn.textContent = 'Copied!';
-        setTimeout(() => copyBtn.textContent = 'Copy Bullet', 2000);
+        setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+    });
+}
+
+// COVER LETTER GENERATOR TAB
+function initCoverLetterGenerator() {
+    const btnGenerate = document.getElementById('btnGenerateCoverLetter');
+    const resultArea = document.getElementById('coverLetterResult');
+    const btnCopy = document.getElementById('btnCopyCoverLetter');
+    const btnDownload = document.getElementById('btnDownloadCoverLetter');
+    const spinner = document.getElementById('spinnerCl');
+    const btnText = btnGenerate.querySelector('.btn-text');
+
+    btnGenerate.addEventListener('click', async () => {
+        const role = document.getElementById('clTargetRole').value.trim() || 'Software Engineer';
+        const tone = document.getElementById('clTone').value;
+        const resumeText = document.getElementById('clResumeText').value.trim();
+        const jobDesc = document.getElementById('clJobDesc').value.trim();
+
+        if (!resumeText && !jobDesc) {
+            alert('Please provide your experience summary or the target job description.');
+            return;
+        }
+
+        btnGenerate.disabled = true;
+        if (spinner) spinner.classList.remove('hidden');
+        if (btnText) btnText.textContent = 'Generating Cover Letter...';
+
+        try {
+            const res = await fetch('/api/cover-letter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    target_job_title: role,
+                    tone: tone,
+                    resume_text: resumeText,
+                    job_description: jobDesc
+                })
+            });
+
+            const data = await res.json();
+            if (data.success && data.cover_letter) {
+                resultArea.value = data.cover_letter;
+                btnCopy.disabled = false;
+                btnDownload.disabled = false;
+                showToast('Tailored cover letter generated!');
+            } else {
+                alert('Generation Error: ' + (data.error || 'Failed to generate cover letter.'));
+            }
+        } catch (e) {
+            alert('Failed to generate cover letter: ' + e.message);
+        } finally {
+            btnGenerate.disabled = false;
+            if (spinner) spinner.classList.add('hidden');
+            if (btnText) btnText.textContent = 'Generate Tailored Cover Letter';
+        }
+    });
+
+    btnCopy.addEventListener('click', () => {
+        if (!resultArea.value) return;
+        navigator.clipboard.writeText(resultArea.value);
+        showToast('Cover letter copied to clipboard!');
+    });
+
+    btnDownload.addEventListener('click', () => {
+        if (!resultArea.value) return;
+        const blob = new Blob([resultArea.value], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Cover_Letter.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Cover letter downloaded as Cover_Letter.txt');
     });
 }
 
@@ -330,9 +553,10 @@ async function viewHistoryItem(id) {
         const res = await fetch(`/api/analysis/${id}`);
         const data = await res.json();
         if (data.success) {
-            // Switch tab to matcher & render
+            lastAnalysisResult = data;
             document.querySelector('[data-tab="tab-analyze"]').click();
             renderDashboard(data);
+            showToast(`Loaded Report #${id}`);
         }
     } catch (e) {
         alert('Failed to load analysis record.');
