@@ -126,6 +126,7 @@ body {
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
     gap: 2px;
+    flex-wrap: wrap;
 }
 
 .nav-btn {
@@ -494,9 +495,10 @@ textarea:focus,
     color: var(--text-muted);
 }
 
+/* 2-COLUMN METRICS GRID (Overall Match + ATS Readability) */
 .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 14px;
     margin-bottom: 20px;
 }
@@ -511,7 +513,7 @@ textarea:focus,
     background-color: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    padding: 14px;
+    padding: 16px;
     text-align: center;
 }
 
@@ -526,7 +528,7 @@ textarea:focus,
 }
 
 .metric-value {
-    font-size: 1.7rem;
+    font-size: 1.8rem;
     font-weight: 700;
     margin-bottom: 6px;
     font-family: var(--font-mono);
@@ -607,6 +609,32 @@ textarea:focus,
     color: var(--text-bright);
     display: block;
     margin-bottom: 4px;
+}
+
+/* OPTIMIZED RESUME CALLOUT BANNER */
+.optimized-resume-callout {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, rgba(47, 129, 247, 0.12), rgba(35, 134, 54, 0.12));
+    border: 1px solid rgba(47, 129, 247, 0.3);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.callout-left strong {
+    color: var(--text-bright);
+    font-size: 0.92rem;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.callout-left p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
 }
 
 /* SKILLS SECTION */
@@ -737,6 +765,41 @@ textarea:focus,
     border-top: 1px solid var(--border-color);
 }
 
+/* OPTIMIZED RESUME TAB */
+.optimized-resume-actions-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.badge-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.download-buttons-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.optimized-resume-textarea {
+    font-family: var(--font-mono);
+    line-height: 1.6;
+    font-size: 0.88rem;
+    background-color: var(--bg-primary);
+    resize: vertical;
+    white-space: pre-wrap;
+}
+
 /* COVER LETTER TAB */
 .output-header {
     display: flex;
@@ -829,57 +892,6 @@ textarea:focus,
 .py-4 { padding-top: 16px; padding-bottom: 16px; }
 .text-center { text-align: center; }
 
-/* QUICK GUIDE BOX */
-.quick-guide-box {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 12px;
-    margin-bottom: 18px;
-}
-
-@media (max-width: 768px) {
-    .quick-guide-box {
-        grid-template-columns: 1fr;
-    }
-}
-
-.guide-item {
-    font-size: 0.78rem;
-}
-
-.guide-item p {
-    color: var(--text-muted);
-    margin-top: 4px;
-    line-height: 1.3;
-}
-
-.guide-badge {
-    display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 6px;
-}
-
-.bg-green-light {
-    background-color: rgba(35, 134, 54, 0.2);
-    color: var(--accent-green-bright);
-}
-
-.bg-amber-light {
-    background-color: rgba(210, 153, 34, 0.2);
-    color: var(--accent-amber);
-}
-
-.bg-blue-light {
-    background-color: rgba(47, 129, 247, 0.2);
-    color: var(--accent-blue);
-}
-
 /* ATS EXPLAINER BANNER */
 .ats-explainer-banner {
     background-color: rgba(47, 129, 247, 0.08);
@@ -913,7 +925,7 @@ textarea:focus,
     .input-panel,
     .dashboard-top-actions,
     .dashboard-footer-actions,
-    .quick-guide-box,
+    .optimized-resume-callout,
     .ats-explainer-banner,
     .btn,
     .toast-container {

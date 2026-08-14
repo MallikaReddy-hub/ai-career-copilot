@@ -25,7 +25,7 @@ POWER_VERBS = [
 def analyze_resume_vs_jd(resume_text, job_description, target_job_title="Software Engineer"):
     """
     Analyzes resume text against a target job description.
-    Returns structured analysis dict.
+    Returns structured analysis dict with optimized resume generation.
     """
     resume_clean = resume_text.lower()
     jd_clean = job_description.lower()
@@ -37,26 +37,23 @@ def analyze_resume_vs_jd(resume_text, job_description, target_job_title="Softwar
     matching_skills = list(set(jd_skills).intersection(set(resume_skills)))
     missing_skills = list(set(jd_skills) - set(resume_skills))
     
-    # Match score based on skill overlap + word overlap
+    # Match score based on skill overlap
     if jd_skills:
         skill_score = min(100, int((len(matching_skills) / max(1, len(jd_skills))) * 100))
     else:
-        skill_score = 70
+        skill_score = 75
         
     # 2. ATS Formatting & Content Quality Check
     ats_score, ats_feedback = evaluate_ats_formatting(resume_text)
     
-    # 3. Quantified Impact Audit
-    quantified_score, metrics_found = evaluate_quantified_impact(resume_text)
+    # 3. Overall Weighted Score (Skill coverage 65% + ATS readability 35%)
+    overall_score = int((skill_score * 0.65) + (ats_score * 0.35))
     
-    # 4. Overall Weighted Score
-    overall_score = int((skill_score * 0.50) + (ats_score * 0.25) + (quantified_score * 0.25))
-    
-    # 5. Bullet Point Rewriter Recommendations
+    # 4. Bullet Point Rewriter Recommendations
     bullet_improvements = generate_bullet_improvements(resume_text)
     
-    # 6. Overall Summary
-    summary_feedback = generate_summary_text(overall_score, len(missing_skills), quantified_score, ats_score)
+    # 5. Overall Summary
+    summary_feedback = generate_summary_text(overall_score, len(missing_skills), ats_score)
     
     # Try optional Gemini LLM Enhancement if API key is present
     gemini_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
@@ -68,14 +65,23 @@ def analyze_resume_vs_jd(resume_text, job_description, target_job_title="Softwar
             if 'bullet_improvements' in ai_enhancement and ai_enhancement['bullet_improvements']:
                 bullet_improvements = ai_enhancement['bullet_improvements']
     
+    # 6. Generate Complete Optimized Resume Text (with missing skills added + weak bullets replaced)
+    optimized_resume = generate_optimized_resume(
+        resume_text=resume_text,
+        missing_skills=missing_skills,
+        bullet_improvements=bullet_improvements,
+        target_job_title=target_job_title
+    )
+
     return {
         'overall_match_score': overall_score,
         'ats_formatting_score': ats_score,
-        'quantified_impact_score': quantified_score,
+        'quantified_impact_score': 0, # Kept for DB compatibility
         'summary_feedback': summary_feedback,
         'missing_critical_skills': missing_skills,
         'present_matching_skills': matching_skills,
         'bullet_improvements': bullet_improvements,
+        'optimized_resume': optimized_resume,
         'ats_feedback': ats_feedback
     }
 
@@ -94,14 +100,14 @@ def evaluate_ats_formatting(resume_text):
     words = re.findall(r'\b\w+\b', resume_text)
     word_count = len(words)
     
-    if word_count < 250:
+    if word_count < 200:
         score -= 20
-        feedback.append("Resume length is short (< 250 words). Add more details regarding achievements and technical scope.")
+        feedback.append("Resume length is short (< 200 words). Add more details regarding achievements and technical scope.")
     elif word_count > 1200:
         score -= 15
         feedback.append("Resume length is long (> 1200 words). Aim for a clean 1 or 2 page concise format.")
     else:
-        feedback.append("Optimal word count (~400-800 words). Perfect for ATS parsing.")
+        feedback.append("Optimal word count (~300-800 words). Great for ATS parsing.")
         
     # Check key contact fields
     if not re.search(r'[\w\.-]+@[\w\.-]+\.\w+', resume_text):
@@ -118,34 +124,6 @@ def evaluate_ats_formatting(resume_text):
         feedback.append("Dedicated 'Skills' section heading missing. Ensure ATS can easily aggregate your tech stack.")
         
     return max(30, score), feedback
-
-def evaluate_quantified_impact(resume_text):
-    metrics_patterns = [
-        r'\b\d+%\b',
-        r'\$\d+(?:,\d+)*(?:\.\d+)?(?:k|m|b)?\b',
-        r'\b\d+x\b',
-        r'\b\d+\s*(?:ms|seconds|min|hours|days|percent|users|customers|requests|transactions)\b',
-        r'\b(?:increased|decreased|reduced|improved|grew|saved|scaled)\s+by\s+\d+',
-    ]
-    
-    found_metrics = []
-    for pattern in metrics_patterns:
-        matches = re.findall(pattern, resume_text, re.IGNORECASE)
-        found_metrics.extend(matches)
-        
-    unique_metrics = list(set(found_metrics))
-    count = len(unique_metrics)
-    
-    if count >= 5:
-        score = 95
-    elif count >= 3:
-        score = 80
-    elif count >= 1:
-        score = 60
-    else:
-        score = 35
-        
-    return score, unique_metrics
 
 def generate_bullet_improvements(resume_text):
     """
@@ -199,10 +177,9 @@ def generate_bullet_improvements(resume_text):
                     break
                     
     if not bullet_improvements:
-        # Fallback sample optimizations if no explicit bullets detected
         bullet_improvements.append({
             'original': "Worked on backend APIs and database tables for user authentication.",
-            'revised': "Architected high-throughput REST APIs and optimized MySQL indexing, cutting auth latency by 35%.",
+            'revised': "Architected high-throughput REST APIs and optimized database indexing, cutting latency by 35%.",
             'reason': "Replaced weak passive opener 'Worked on' with strong action verb 'Architected' + added metric."
         })
         bullet_improvements.append({
@@ -213,19 +190,91 @@ def generate_bullet_improvements(resume_text):
         
     return bullet_improvements[:4]
 
-def generate_summary_text(overall_score, missing_count, quantified_score, ats_score):
-    if overall_score >= 85:
+def generate_summary_text(overall_score, missing_count, ats_score):
+    if overall_score >= 80:
         return f"Outstanding resume alignment! Match score is {overall_score}%. High keyword density and strong ATS formatting."
-    elif overall_score >= 70:
-        return f"Strong match ({overall_score}%). Recommended action: Address the {missing_count} missing skill keyword(s) and incorporate more quantified impact metrics."
+    elif overall_score >= 60:
+        return f"Good match ({overall_score}%). Recommended action: Add the {missing_count} missing skill keyword(s) to your skills section and use the optimized bullet points below."
     else:
-        return f"Moderate match ({overall_score}%). Resume requires targeted optimization to pass ATS filters for this role."
+        return f"Needs revision ({overall_score}%). Update your resume with the missing job keywords and rewritten bullet points to pass ATS screening."
+
+def generate_optimized_resume(resume_text, missing_skills, bullet_improvements, target_job_title="Software Engineer"):
+    """
+    Constructs a complete, ATS-optimized version of the candidate's resume:
+    - Injects missing keywords into the Technical Skills section.
+    - Replaces weak bullet points with optimized power-verb versions.
+    - Formats all sections in a standard ATS layout.
+    """
+    gemini_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+    if gemini_key:
+        try:
+            from google import genai
+            client = genai.Client(api_key=gemini_key)
+            prompt = f"""
+            You are an expert resume optimizer. Rewrite the following candidate resume for the role '{target_job_title}'.
+            
+            Instructions:
+            1. Integrate these missing critical keywords into the Skills or Experience section: {', '.join(missing_skills)}.
+            2. Upgrade weak bullet points with strong action verbs and quantified achievements.
+            3. Maintain a clean, professional ATS format with clear section headings:
+               - CONTACT INFORMATION
+               - PROFESSIONAL SUMMARY
+               - TECHNICAL SKILLS
+               - PROFESSIONAL EXPERIENCE
+               - EDUCATION & CERTIFICATIONS
+            4. Return ONLY the plain text of the rewritten resume (ready to copy and download).
+
+            Original Resume:
+            {resume_text[:3000]}
+            """
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            if response.text and len(response.text.strip()) > 100:
+                return response.text.strip()
+        except Exception:
+            pass
+
+    # Intelligent Rule-Based Reconstructor
+    lines = resume_text.strip().split('\n')
+    output_lines = []
+    skills_injected = False
+    bullet_map = {b['original'].strip().lower(): b['revised'].strip() for b in bullet_improvements if 'original' in b and 'revised' in b}
+
+    for line in lines:
+        trimmed = line.strip()
+        if not trimmed:
+            output_lines.append("")
+            continue
+
+        # Check if this line is in the Skills section
+        if re.search(r'\b(skills|technologies|tech stack)\b', trimmed, re.IGNORECASE) and not skills_injected:
+            output_lines.append(trimmed)
+            if missing_skills:
+                output_lines.append(f"• Additional Target Competencies: {', '.join(missing_skills)}")
+            skills_injected = True
+            continue
+
+        # Check if line matches any weak bullet to replace
+        cleaned_bullet = re.sub(r'^[•\-\*\d\.]+\s*', '', trimmed).strip()
+        replaced = False
+        for orig_key, rev_val in bullet_map.items():
+            if orig_key in cleaned_bullet.lower() or cleaned_bullet.lower() in orig_key:
+                output_lines.append(f"• {rev_val}")
+                replaced = True
+                break
+
+        if not replaced:
+            output_lines.append(trimmed)
+
+    # If no skills section was found, add a clean section at the top
+    if not skills_injected and missing_skills:
+        output_lines.insert(3, f"\nTECHNICAL SKILLS & KEYWORDS\n• Core Competencies: {', '.join(missing_skills)}\n")
+
+    return "\n".join(output_lines)
 
 def generate_cover_letter(resume_text, job_description, target_job_title="Software Engineer", tone="Professional"):
-    """
-    Generates an ATS-tailored cover letter based on candidate resume and job description.
-    Uses Gemini LLM if key is present; otherwise produces a polished, keyword-optimized template.
-    """
     gemini_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
     if gemini_key:
         try:
@@ -258,7 +307,6 @@ def generate_cover_letter(resume_text, job_description, target_job_title="Softwa
         except Exception:
             pass
 
-    # Intelligent Rule-Based Fallback Generator
     extracted_skills = extract_skills(resume_text.lower())
     top_skills = ", ".join(extracted_skills[:4]) if extracted_skills else "Full-Stack Development, Scalable System Design, and Modern Cloud Architecture"
     
@@ -282,7 +330,6 @@ Sincerely,
     return letter
 
 def get_gemini_insights(resume_text, job_description, api_key):
-    """Optional Gemini API integration if GOOGLE_API_KEY is available."""
     try:
         from google import genai
         client = genai.Client(api_key=api_key)

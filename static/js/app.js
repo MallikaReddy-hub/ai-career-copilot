@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initFileUpload();
     initFormSubmission();
+    initOptimizedResumeActions();
     initSingleOptimizer();
     initCoverLetterGenerator();
     initExportAndCopyActions();
@@ -19,7 +20,6 @@ function initTheme() {
     const sunIcon = toggleBtn.querySelector('.sun-icon');
     const moonIcon = toggleBtn.querySelector('.moon-icon');
 
-    // Check saved preference or system preference
     const savedTheme = localStorage.getItem('career_copilot_theme') || 'dark';
     applyTheme(savedTheme);
 
@@ -189,7 +189,7 @@ function initFormSubmission() {
             if (data.success) {
                 lastAnalysisResult = data;
                 renderDashboard(data);
-                showToast('ATS Match Analysis Complete!');
+                showToast('ATS Analysis Complete! Optimized Resume Ready.');
             } else {
                 alert('Analysis Error: ' + (data.error || 'Failed to analyze resume.'));
             }
@@ -227,7 +227,7 @@ function renderDashboard(data) {
         if (scoreOverall >= 80) {
             hintOverall.textContent = "High Candidate Fit (Ready to Apply)";
             hintOverall.style.color = "var(--accent-green-bright)";
-        } else if (scoreOverall >= 65) {
+        } else if (scoreOverall >= 60) {
             hintOverall.textContent = "Good Match (Add missing skills)";
             hintOverall.style.color = "var(--accent-amber)";
         } else {
@@ -236,18 +236,19 @@ function renderDashboard(data) {
         }
     }
 
-    // ATS score
+    // ATS Readability score
     const scoreAts = data.ats_formatting_score || 0;
     document.getElementById('scoreAts').textContent = `${scoreAts}%`;
     document.getElementById('barAts').style.width = `${scoreAts}%`;
 
-    // Quantified impact score
-    const scoreQuant = data.quantified_impact_score || 0;
-    document.getElementById('scoreQuant').textContent = `${scoreQuant}%`;
-    document.getElementById('barQuant').style.width = `${scoreQuant}%`;
-
     // Summary Text
     document.getElementById('summaryText').textContent = data.summary_feedback || 'Analysis complete.';
+
+    // Populate Optimized Resume Editor
+    const editor = document.getElementById('optimizedResumeEditor');
+    if (editor && data.optimized_resume) {
+        editor.value = data.optimized_resume;
+    }
 
     // Skill Badges
     const missingContainer = document.getElementById('missingSkillsPills');
@@ -321,9 +322,129 @@ function renderDashboard(data) {
     }
 }
 
+// OPTIMIZED RESUME ACTIONS & DOWNLOADS
+function initOptimizedResumeActions() {
+    const editor = document.getElementById('optimizedResumeEditor');
+    const btnDocx = document.getElementById('btnDownloadDocx');
+    const btnTxt = document.getElementById('btnDownloadTxt');
+    const btnPrint = document.getElementById('btnPrintResume');
+    const btnCopy = document.getElementById('btnCopyOptimizedResume');
+    const btnCallout = document.getElementById('btnGoToOptimizedResume');
+
+    btnCallout?.addEventListener('click', () => {
+        document.getElementById('navOptimizedResume').click();
+    });
+
+    // Download .DOCX (Microsoft Word)
+    btnDocx?.addEventListener('click', async () => {
+        const text = editor.value.trim();
+        if (!text) {
+            showToast('No optimized resume content to download yet.');
+            return;
+        }
+
+        btnDocx.disabled = true;
+        btnDocx.textContent = 'Preparing .DOCX...';
+
+        try {
+            const role = lastAnalysisResult?.target_job_title || 'Software_Engineer';
+            const response = await fetch('/api/download-docx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    resume_text: text,
+                    target_job_title: role
+                })
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Optimized_Resume_${role.replace(/\s+/g, '_')}.docx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                showToast('Downloaded .DOCX resume!');
+            } else {
+                alert('Failed to generate Word document.');
+            }
+        } catch (e) {
+            alert('Download failed: ' + e.message);
+        } finally {
+            btnDocx.disabled = false;
+            btnDocx.innerHTML = `
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download .DOCX (Word)
+            `;
+        }
+    });
+
+    // Download .TXT
+    btnTxt?.addEventListener('click', () => {
+        const text = editor.value.trim();
+        if (!text) {
+            showToast('No optimized resume content to download yet.');
+            return;
+        }
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Optimized_Resume.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Downloaded .TXT resume!');
+    });
+
+    // Print / PDF format
+    btnPrint?.addEventListener('click', () => {
+        const text = editor.value.trim();
+        if (!text) {
+            showToast('No resume content to print.');
+            return;
+        }
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Optimized Resume</title>
+                <style>
+                    body { font-family: 'Calibri', 'Segoe UI', sans-serif; line-height: 1.5; color: #111; padding: 30px 40px; margin: 0 auto; max-width: 800px; }
+                    pre { white-space: pre-wrap; font-family: inherit; font-size: 11pt; }
+                </style>
+            </head>
+            <body>
+                <pre>${escapeHtml(text)}</pre>
+                <script>
+                    window.onload = function() { window.print(); window.close(); }
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    });
+
+    // Copy All Resume Text
+    btnCopy?.addEventListener('click', () => {
+        const text = editor.value.trim();
+        if (!text) {
+            showToast('No resume content to copy.');
+            return;
+        }
+        navigator.clipboard.writeText(text);
+        showToast('Optimized resume copied to clipboard!');
+    });
+}
+
 // EXPORT & COPY ACTION HANDLERS
 function initExportAndCopyActions() {
-    // Export PDF / Print
+    // Export PDF Report
     document.getElementById('btnExportPdf')?.addEventListener('click', () => {
         window.print();
     });
@@ -341,7 +462,6 @@ function initExportAndCopyActions() {
 Job Role: ${lastAnalysisResult.target_job_title || 'Software Engineer'}
 Match Score: ${lastAnalysisResult.overall_match_score || 0}%
 ATS Readability: ${lastAnalysisResult.ats_formatting_score || 0}%
-Quantified Impact: ${lastAnalysisResult.quantified_impact_score || 0}%
 
 Summary Verdict:
 ${lastAnalysisResult.summary_feedback || ''}
@@ -350,7 +470,7 @@ Matching Skills: ${matching}
 Missing Critical Skills: ${missing}
 `;
         navigator.clipboard.writeText(report);
-        showToast('Full analysis report copied to clipboard!');
+        showToast('Analysis report copied to clipboard!');
     });
 
     // Copy Missing Skills List
@@ -534,7 +654,7 @@ async function loadScanHistory() {
                     <td><strong>${escapeHtml(scan.target_job_title)}</strong></td>
                     <td>${escapeHtml(scan.filename || 'Upload')}</td>
                     <td><span class="pill pill-green">${scan.overall_match_score}%</span></td>
-                    <td><span class="pill pill-amber">${scan.ats_formatting_score}%</span></td>
+                    <td><span class="pill pill-blue">${scan.ats_formatting_score}%</span></td>
                     <td>${scan.analyzed_at ? scan.analyzed_at.substring(0, 16) : ''}</td>
                     <td><button class="btn btn-secondary btn-sm" onclick="window.viewHistoryItem(${scan.id})">View Report</button></td>
                 `;
