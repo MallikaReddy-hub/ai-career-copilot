@@ -668,5 +668,57 @@ textarea:focus,
 .hidden { display: none !important; }
 .mt-3 { margin-top: 12px; }
 .mt-4 { margin-top: 16px; }
+.mb-4 { margin-bottom: 16px; }
 .py-4 { padding-top: 16px; padding-bottom: 16px; }
 .text-center { text-align: center; }
+
+/* QUICK GUIDE BOX */
+.quick-guide-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .quick-guide-box {
+        grid-template-columns: 1fr;
+    }
+}
+
+.guide-item {
+    font-size: 0.78rem;
+}
+
+.guide-item p {
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.3;
+}
+
+.guide-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.bg-green-light {
+    background-color: rgba(35, 134, 54, 0.2);
+    color: var(--accent-green-bright);
+}
+
+.bg-amber-light {
+    background-color: rgba(210, 153, 34, 0.2);
+    color: var(--accent-amber);
+}
+
+.bg-blue-light {
+    background-color: rgba(47, 129, 247, 0.2);
+    color: var(--accent-blue);
+}

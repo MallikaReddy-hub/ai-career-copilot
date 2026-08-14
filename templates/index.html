@@ -141,34 +141,50 @@
                             <!-- Key Metrics Score Cards Grid -->
                             <div class="metrics-grid">
                                 <div class="metric-card">
-                                    <span class="card-label">Overall Match</span>
+                                    <span class="card-label">Overall Match Score</span>
                                     <div class="gauge-container">
                                         <div class="gauge" id="overallGauge" style="--score: 85;">
                                             <span class="gauge-value" id="scoreOverall">85%</span>
                                         </div>
                                     </div>
-                                    <span class="card-hint">Combined Fit Score</span>
+                                    <span class="card-hint" id="hintOverall">Candidate Fit for Role</span>
                                 </div>
 
                                 <div class="metric-card">
                                     <span class="card-label">ATS Readability</span>
                                     <div class="metric-value text-blue" id="scoreAts">90%</div>
                                     <div class="progress-bar"><div class="progress-fill bg-blue" id="barAts" style="width: 90%;"></div></div>
-                                    <span class="card-hint">Formatting & Structure</span>
+                                    <span class="card-hint">PDF Layout & Structure Clarity</span>
                                 </div>
 
                                 <div class="metric-card">
                                     <span class="card-label">Quantified Impact</span>
                                     <div class="metric-value text-green" id="scoreQuant">75%</div>
                                     <div class="progress-bar"><div class="progress-fill bg-green" id="barQuant" style="width: 75%;"></div></div>
-                                    <span class="card-hint">Metrics & Performance</span>
+                                    <span class="card-hint">Metrics, Numbers & Results (% / $)</span>
                                 </div>
                             </div>
 
                             <!-- Executive Summary Banner -->
                             <div class="summary-box" id="summaryBox">
-                                <strong>Recruiter Verdict:</strong>
+                                <strong>💡 Recruiter Verdict & Action Plan:</strong>
                                 <p id="summaryText">Strong match. Resume shows solid technical keyword coverage.</p>
+                            </div>
+
+                            <!-- Quick Guide Legend Box -->
+                            <div class="quick-guide-box mb-4">
+                                <div class="guide-item">
+                                    <span class="guide-badge bg-green-light">1. Matching Skills</span>
+                                    <p>Keywords present in both your resume & job listing.</p>
+                                </div>
+                                <div class="guide-item">
+                                    <span class="guide-badge bg-amber-light">2. Missing Skills</span>
+                                    <p>Required keywords missing from resume (Add these to pass ATS).</p>
+                                </div>
+                                <div class="guide-item">
+                                    <span class="guide-badge bg-blue-light">3. Recommended Revisions</span>
+                                    <p>Rewritten bullet points with stronger action verbs & metrics.</p>
+                                </div>
                             </div>
 
                             <!-- Skills Breakdown Section -->

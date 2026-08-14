@@ -158,11 +158,25 @@ function renderDashboard(data) {
     document.getElementById('resultJobTitle').textContent = `${data.target_job_title || 'Software Engineer'} Report`;
     document.getElementById('resultFilename').textContent = `${data.filename || 'Resume.pdf'} • ${data.word_count || 0} words`;
 
-    // Overall score gauge
+    // Overall score gauge & dynamic rating hint
     const scoreOverall = data.overall_match_score || 0;
     document.getElementById('scoreOverall').textContent = `${scoreOverall}%`;
     const gauge = document.getElementById('overallGauge');
     gauge.style.setProperty('--score', scoreOverall);
+
+    const hintOverall = document.getElementById('hintOverall');
+    if (hintOverall) {
+        if (scoreOverall >= 80) {
+            hintOverall.textContent = "High Candidate Fit (Ready to Apply)";
+            hintOverall.style.color = "var(--accent-green-bright)";
+        } else if (scoreOverall >= 65) {
+            hintOverall.textContent = "Good Match (Add missing skills)";
+            hintOverall.style.color = "var(--accent-amber)";
+        } else {
+            hintOverall.textContent = "Low Match (Needs Revision)";
+            hintOverall.style.color = "var(--accent-red)";
+        }
+    }
 
     // ATS score
     const scoreAts = data.ats_formatting_score || 0;
