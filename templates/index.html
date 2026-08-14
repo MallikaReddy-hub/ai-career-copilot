@@ -73,19 +73,19 @@
                                 <input type="text" id="targetJobTitle" name="target_job_title" placeholder="e.g. Senior Backend Engineer / Full Stack Developer" required value="Software Engineer">
                             </div>
 
-                            <!-- PDF File Upload Drag & Drop Zone -->
+                            <!-- PDF / DOCX File Upload Drag & Drop Zone -->
                             <div class="form-group">
-                                <label>Upload Resume PDF</label>
+                                <label>Upload Resume (PDF or DOCX)</label>
                                 <div class="drop-zone" id="dropZone">
-                                    <input type="file" id="resumePdf" name="resume_pdf" accept=".pdf" class="file-input">
+                                    <input type="file" id="resumePdf" name="resume_pdf" accept=".pdf,.docx,.doc" class="file-input">
                                     <div class="drop-zone-content">
                                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                             <polyline points="17 8 12 3 7 8"></polyline>
                                             <line x1="12" y1="3" x2="12" y2="15"></line>
                                         </svg>
-                                        <p class="drop-title">Drag & drop your PDF resume here</p>
-                                        <p class="drop-subtitle">or click to browse files (PDF only, max 16MB)</p>
+                                        <p class="drop-title">Drag & drop your PDF or DOCX resume here</p>
+                                        <p class="drop-subtitle">or click to browse files (PDF or DOCX, max 16MB)</p>
                                         <div class="file-info hidden" id="fileInfo">
                                             <span class="file-name" id="fileName">resume.pdf</span>
                                             <button type="button" class="btn-remove" id="btnRemoveFile">&times;</button>

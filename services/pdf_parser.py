@@ -1,11 +1,22 @@
 import re
+import io
 from pypdf import PdfReader
+import docx
+
+def extract_text_from_file(file_stream, filename="resume.pdf"):
+    """
+    Unified text extractor for both PDF and DOCX resume files.
+    """
+    ext = filename.lower().split('.')[-1]
+    
+    if ext == 'docx':
+        return extract_text_from_docx(file_stream)
+    else:
+        return extract_text_from_pdf(file_stream)
 
 def extract_text_from_pdf(pdf_file_stream):
     """
-    Extracts raw text from a PDF file stream or file object.
-    Returns:
-        dict: containing 'raw_text', 'page_count', 'word_count', 'sections'
+    Extracts raw text from a PDF file stream.
     """
     try:
         reader = PdfReader(pdf_file_stream)
@@ -21,7 +32,6 @@ def extract_text_from_pdf(pdf_file_stream):
         words = re.findall(r'\b\w+\b', full_text)
         word_count = len(words)
         
-        # Simple section segmenter
         sections = parse_resume_sections(full_text)
         
         return {
@@ -34,7 +44,50 @@ def extract_text_from_pdf(pdf_file_stream):
     except Exception as e:
         return {
             'success': False,
-            'error': str(e),
+            'error': f"PDF Extraction Error: {str(e)}",
+            'raw_text': '',
+            'page_count': 0,
+            'word_count': 0,
+            'sections': {}
+        }
+
+def extract_text_from_docx(docx_file_stream):
+    """
+    Extracts raw text from a Microsoft Word (.docx) file stream.
+    """
+    try:
+        doc = docx.Document(docx_file_stream)
+        full_text_list = []
+        
+        # Read paragraphs
+        for p in doc.paragraphs:
+            if p.text.strip():
+                full_text_list.append(p.text.strip())
+                
+        # Read table cell content if present
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = " | ".join([cell.text.strip() for cell in row.cells if cell.text.strip()])
+                if row_text:
+                    full_text_list.append(row_text)
+                    
+        full_text = "\n".join(full_text_list)
+        words = re.findall(r'\b\w+\b', full_text)
+        word_count = len(words)
+        
+        sections = parse_resume_sections(full_text)
+        
+        return {
+            'success': True,
+            'raw_text': full_text,
+            'page_count': 1,
+            'word_count': word_count,
+            'sections': sections
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': f"DOCX Extraction Error: {str(e)}",
             'raw_text': '',
             'page_count': 0,
             'word_count': 0,
@@ -72,5 +125,4 @@ def parse_resume_sections(text):
         if not matched_header:
             sections[current_section].append(line)
             
-    # Rejoin lines into string sections
     return {k: "\n".join(v).strip() for k, v in sections.items() if v}

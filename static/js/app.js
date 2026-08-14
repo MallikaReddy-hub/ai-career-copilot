@@ -58,11 +58,14 @@ function initFileUpload() {
     dropZone.addEventListener('drop', (e) => {
         const dt = e.dataTransfer;
         const files = dt.files;
-        if (files.length > 0 && files[0].type === 'application/pdf') {
-            fileInput.files = files;
-            updateFileDisplay(files[0].name);
-        } else {
-            alert('Please drop a valid PDF file.');
+        if (files.length > 0) {
+            const ext = files[0].name.toLowerCase();
+            if (ext.endsWith('.pdf') || ext.endsWith('.docx') || ext.endsWith('.doc')) {
+                fileInput.files = files;
+                updateFileDisplay(files[0].name);
+            } else {
+                alert('Please drop a valid PDF or DOCX file.');
+            }
         }
     });
 

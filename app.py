@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, jsonify
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import init_db, save_resume, save_analysis, get_analysis_history, get_analysis_by_id
-from services.pdf_parser import extract_text_from_pdf
+from services.pdf_parser import extract_text_from_file
 from services.analyzer import analyze_resume_vs_jd, generate_bullet_improvements
 
 app = Flask(__name__)
@@ -36,21 +36,21 @@ def analyze():
         extracted_text = raw_text_input
         word_count = 0
 
-        # Handle PDF File Upload if present
+        # Handle PDF / DOCX File Upload if present
         if 'resume_pdf' in request.files and request.files['resume_pdf'].filename != '':
-            pdf_file = request.files['resume_pdf']
-            filename = pdf_file.filename
+            uploaded_file = request.files['resume_pdf']
+            filename = uploaded_file.filename
             
-            # Extract PDF text
-            parse_result = extract_text_from_pdf(pdf_file)
+            # Extract PDF or DOCX text
+            parse_result = extract_text_from_file(uploaded_file, filename)
             if not parse_result['success']:
-                return jsonify({'success': False, 'error': f"Failed to parse PDF: {parse_result.get('error')}"}), 400
+                return jsonify({'success': False, 'error': f"Failed to parse document: {parse_result.get('error')}"}), 400
                 
             extracted_text = parse_result['raw_text']
             word_count = parse_result['word_count']
 
         if not extracted_text:
-            return jsonify({'success': False, 'error': 'Please upload a valid PDF resume or paste resume text.'}), 400
+            return jsonify({'success': False, 'error': 'Please upload a valid PDF or DOCX resume or paste resume text.'}), 400
 
         if not job_description:
             return jsonify({'success': False, 'error': 'Please provide a target job description to run match analysis.'}), 400
