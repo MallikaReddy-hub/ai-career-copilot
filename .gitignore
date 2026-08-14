@@ -1,0 +1,21 @@
+# Python & Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Databases & Local Data
+*.db
+career_copilot.db
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Environment Variables & Keys
+.env
+.env.local
+
+# Logs
+*.log
