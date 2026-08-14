@@ -164,7 +164,7 @@
                                 <div class="dashboard-top-actions">
                                     <button class="btn btn-outline btn-sm" id="btnExportPdf" title="Print or Save as PDF Report">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                                        Export PDF Report
+                                        Export Report PDF
                                     </button>
                                     <button class="btn btn-outline btn-sm" id="btnCopyReport" title="Copy full analysis summary">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -210,7 +210,7 @@
                             <div class="optimized-resume-callout">
                                 <div class="callout-left">
                                     <strong>✨ Download Your Optimized Resume</strong>
-                                    <p>We've automatically added missing skills and upgraded weak bullets into a new ATS-ready resume.</p>
+                                    <p>We've automatically added missing skills and upgraded weak bullets into a new executive ATS-ready resume.</p>
                                 </div>
                                 <button class="btn btn-primary btn-sm" id="btnGoToOptimizedResume">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -275,15 +275,19 @@
                 <div class="panel single-panel">
                     <div class="panel-header">
                         <h2>📥 Your Optimized ATS Resume</h2>
-                        <p>This version incorporates the missing keywords from the job description and replaces weak phrasing with high-impact power verbs.</p>
+                        <p>Formatted in executive ATS layout with keywords integrated and power verbs applied.</p>
                     </div>
 
                     <div class="optimized-resume-actions-bar">
-                        <div class="badge-group">
-                            <span class="pill pill-green">✓ Keywords Injected</span>
-                            <span class="pill pill-green">✓ Bullet Points Optimized</span>
-                            <span class="pill pill-green">✓ ATS Formatting Standard</span>
+                        <div class="view-mode-toggle">
+                            <button class="btn btn-secondary btn-sm active" id="btnViewVisual">
+                                📄 Formatted Document
+                            </button>
+                            <button class="btn btn-outline btn-sm" id="btnViewEditor">
+                                ✏️ Raw Text Editor
+                            </button>
                         </div>
+                        
                         <div class="download-buttons-group">
                             <button class="btn btn-primary btn-sm" id="btnDownloadDocx">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -299,13 +303,20 @@
                             </button>
                             <button class="btn btn-outline btn-sm" id="btnCopyOptimizedResume">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                Copy All Text
+                                Copy All
                             </button>
                         </div>
                     </div>
 
-                    <div class="form-group mt-3">
-                        <label for="optimizedResumeEditor">Edit or Review Optimized Resume Text:</label>
+                    <!-- Visual Formatted Paper Preview -->
+                    <div id="optimizedResumeVisualWrapper" class="visual-preview-container">
+                        <div class="resume-paper" id="optimizedResumeVisual">
+                            <p class="text-center text-muted" style="padding: 40px 0;">Upload and analyze your resume on the Job Matcher tab to generate your styled executive resume preview.</p>
+                        </div>
+                    </div>
+
+                    <!-- Raw Text Editor View (Hidden by default) -->
+                    <div id="optimizedResumeEditorWrapper" class="hidden mt-3">
                         <textarea id="optimizedResumeEditor" class="form-control optimized-resume-textarea" rows="22" placeholder="Upload and analyze your resume on the Job Matcher tab to view and download your optimized resume here..."></textarea>
                     </div>
                 </div>

@@ -827,6 +827,90 @@ textarea:focus,
     resize: vertical;
 }
 
+/* OPTIMIZED RESUME TAB & VISUAL PREVIEW */
+.view-mode-toggle {
+    display: flex;
+    gap: 6px;
+}
+
+.visual-preview-container {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin-top: 16px;
+    overflow-x: auto;
+}
+
+.resume-paper {
+    background-color: #ffffff;
+    color: #1e293b;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    padding: 40px 48px;
+    border-radius: 6px;
+    max-width: 820px;
+    margin: 0 auto;
+    font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    line-height: 1.45;
+}
+
+.resume-paper .resume-name {
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    color: #0f172a;
+    letter-spacing: 0.5px;
+}
+
+.resume-paper .resume-contact {
+    font-size: 12.5px;
+    text-align: center;
+    color: #64748b;
+    margin-bottom: 16px;
+}
+
+.resume-paper .resume-section-header {
+    border-bottom: 1.5px solid #0f172a;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    padding-bottom: 2px;
+}
+
+.resume-paper .resume-section-header h2 {
+    font-size: 12.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+.resume-paper .resume-bullet-list {
+    margin-left: 20px;
+    margin-bottom: 8px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #1e293b;
+}
+
+.resume-paper .resume-bullet-list li {
+    margin-bottom: 3px;
+}
+
+.resume-paper .resume-subfield {
+    font-size: 12.5px;
+    line-height: 1.45;
+    margin-bottom: 4px;
+}
+
+.resume-paper .resume-text {
+    font-size: 12.5px;
+    line-height: 1.45;
+    margin-bottom: 6px;
+}
+
 /* HISTORY TABLE */
 .history-table {
     width: 100%;

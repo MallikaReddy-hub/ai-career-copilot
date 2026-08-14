@@ -244,10 +244,12 @@ function renderDashboard(data) {
     // Summary Text
     document.getElementById('summaryText').textContent = data.summary_feedback || 'Analysis complete.';
 
-    // Populate Optimized Resume Editor
+    // Populate Optimized Resume Editor & Formatted Visual Preview
     const editor = document.getElementById('optimizedResumeEditor');
-    if (editor && data.optimized_resume) {
-        editor.value = data.optimized_resume;
+    const visual = document.getElementById('optimizedResumeVisual');
+    if (data.optimized_resume) {
+        if (editor) editor.value = data.optimized_resume;
+        if (visual) visual.innerHTML = renderResumeHtml(data.optimized_resume);
     }
 
     // Skill Badges
@@ -304,7 +306,6 @@ function renderDashboard(data) {
             bulletCards.appendChild(card);
         });
 
-        // Attach copy events to individual bullet cards
         bulletCards.querySelectorAll('[data-copy-bullet]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const idx = btn.getAttribute('data-copy-bullet');
@@ -325,6 +326,13 @@ function renderDashboard(data) {
 // OPTIMIZED RESUME ACTIONS & DOWNLOADS
 function initOptimizedResumeActions() {
     const editor = document.getElementById('optimizedResumeEditor');
+    const visual = document.getElementById('optimizedResumeVisual');
+    const visualWrapper = document.getElementById('optimizedResumeVisualWrapper');
+    const editorWrapper = document.getElementById('optimizedResumeEditorWrapper');
+
+    const btnViewVisual = document.getElementById('btnViewVisual');
+    const btnViewEditor = document.getElementById('btnViewEditor');
+
     const btnDocx = document.getElementById('btnDownloadDocx');
     const btnTxt = document.getElementById('btnDownloadTxt');
     const btnPrint = document.getElementById('btnPrintResume');
@@ -333,6 +341,33 @@ function initOptimizedResumeActions() {
 
     btnCallout?.addEventListener('click', () => {
         document.getElementById('navOptimizedResume').click();
+    });
+
+    // View Mode Toggle (Visual Document vs Raw Text)
+    btnViewVisual?.addEventListener('click', () => {
+        btnViewVisual.classList.add('active', 'btn-secondary');
+        btnViewVisual.classList.remove('btn-outline');
+        btnViewEditor.classList.remove('active', 'btn-secondary');
+        btnViewEditor.classList.add('btn-outline');
+
+        visualWrapper.classList.remove('hidden');
+        editorWrapper.classList.add('hidden');
+        if (visual && editor) visual.innerHTML = renderResumeHtml(editor.value);
+    });
+
+    btnViewEditor?.addEventListener('click', () => {
+        btnViewEditor.classList.add('active', 'btn-secondary');
+        btnViewEditor.classList.remove('btn-outline');
+        btnViewVisual.classList.remove('active', 'btn-secondary');
+        btnViewVisual.classList.add('btn-outline');
+
+        editorWrapper.classList.remove('hidden');
+        visualWrapper.classList.add('hidden');
+    });
+
+    // Live sync from Editor to Visual
+    editor?.addEventListener('input', () => {
+        if (visual) visual.innerHTML = renderResumeHtml(editor.value);
     });
 
     // Download .DOCX (Microsoft Word)
@@ -401,28 +436,89 @@ function initOptimizedResumeActions() {
         showToast('Downloaded .TXT resume!');
     });
 
-    // Print / PDF format
+    // Print / Executive PDF format
     btnPrint?.addEventListener('click', () => {
         const text = editor.value.trim();
         if (!text) {
             showToast('No resume content to print.');
             return;
         }
+
+        const formattedHtml = renderResumeHtml(text);
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Optimized Resume</title>
+                <meta charset="UTF-8">
+                <title>Executive Resume</title>
                 <style>
-                    body { font-family: 'Calibri', 'Segoe UI', sans-serif; line-height: 1.5; color: #111; padding: 30px 40px; margin: 0 auto; max-width: 800px; }
-                    pre { white-space: pre-wrap; font-family: inherit; font-size: 11pt; }
+                    @page {
+                        size: letter;
+                        margin: 0.5in;
+                    }
+                    body {
+                        font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+                        color: #1e293b;
+                        background: #ffffff;
+                        line-height: 1.45;
+                        padding: 0;
+                        margin: 0;
+                    }
+                    .resume-name {
+                        font-size: 22px;
+                        font-weight: bold;
+                        text-align: center;
+                        text-transform: uppercase;
+                        margin: 0 0 4px 0;
+                        color: #0f172a;
+                        letter-spacing: 0.5px;
+                    }
+                    .resume-contact {
+                        font-size: 12.5px;
+                        text-align: center;
+                        color: #64748b;
+                        margin-bottom: 14px;
+                    }
+                    .resume-section-header {
+                        border-bottom: 1.5px solid #0f172a;
+                        margin-top: 14px;
+                        margin-bottom: 6px;
+                        padding-bottom: 2px;
+                    }
+                    .resume-section-header h2 {
+                        font-size: 12.5px;
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        color: #0f172a;
+                        margin: 0;
+                        letter-spacing: 0.5px;
+                    }
+                    .resume-bullet-list {
+                        margin: 4px 0 6px 18px;
+                        padding: 0;
+                        font-size: 12px;
+                        line-height: 1.45;
+                    }
+                    .resume-bullet-list li {
+                        margin-bottom: 3px;
+                    }
+                    .resume-subfield {
+                        font-size: 12px;
+                        line-height: 1.45;
+                        margin: 2px 0 4px 0;
+                    }
+                    .resume-text {
+                        font-size: 12px;
+                        line-height: 1.45;
+                        margin: 2px 0 4px 0;
+                    }
                 </style>
             </head>
             <body>
-                <pre>${escapeHtml(text)}</pre>
+                ${formattedHtml}
                 <script>
-                    window.onload = function() { window.print(); window.close(); }
+                    window.onload = function() { window.print(); }
                 </script>
             </body>
             </html>
@@ -440,6 +536,92 @@ function initOptimizedResumeActions() {
         navigator.clipboard.writeText(text);
         showToast('Optimized resume copied to clipboard!');
     });
+}
+
+// RENDER RESUME HTML HELPER
+function renderResumeHtml(resumeText) {
+    if (!resumeText) return '<p class="text-center text-muted">No resume text available.</p>';
+
+    const lines = resumeText.trim().split('\n');
+    const htmlParts = [];
+
+    const knownHeaders = [
+        'PROFILE', 'SUMMARY', 'PROFESSIONAL SUMMARY', 'OBJECTIVE',
+        'TECHNICAL SKILLS', 'SKILLS', 'CORE COMPETENCIES', 'TECHNOLOGIES',
+        'EXPERIENCE', 'PROFESSIONAL EXPERIENCE', 'WORK EXPERIENCE', 'EMPLOYMENT HISTORY',
+        'PROJECTS', 'KEY PROJECTS', 'ACADEMIC PROJECTS',
+        'EDUCATION', 'ACADEMIC BACKGROUND', 'CERTIFICATIONS', 'ACHIEVEMENTS'
+    ];
+
+    let isHeaderPhase = true;
+    let inBulletList = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) {
+            if (inBulletList) {
+                htmlParts.push('</ul>');
+                inBulletList = false;
+            }
+            continue;
+        }
+
+        const cleanUpper = line.toUpperCase().replace(/:$/, '');
+
+        // Header Candidate Name
+        if (isHeaderPhase && (i === 0 || (line.split(/\s+/).length <= 5 && !line.includes('@') && !line.includes('http')))) {
+            htmlParts.push(`<h1 class="resume-name">${escapeHtml(line)}</h1>`);
+            continue;
+        } else if (isHeaderPhase && (line.includes('@') || line.toLowerCase().includes('linkedin') || line.toLowerCase().includes('github') || line.includes('|') || line.includes('+'))) {
+            const contacts = line.split('|').map(c => c.trim()).filter(Boolean);
+            const formatted = contacts.map(c => `<span>${escapeHtml(c)}</span>`).join(' &bull; ');
+            htmlParts.push(`<div class="resume-contact">${formatted}</div>`);
+            isHeaderPhase = false;
+            continue;
+        }
+
+        isHeaderPhase = false;
+
+        // Section Header
+        if (knownHeaders.includes(cleanUpper)) {
+            if (inBulletList) {
+                htmlParts.push('</ul>');
+                inBulletList = false;
+            }
+            htmlParts.push(`<div class="resume-section-header"><h2>${escapeHtml(cleanUpper)}</h2></div>`);
+            continue;
+        }
+
+        // Bullet Point
+        if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+            const bulletContent = line.replace(/^[•\-\*\d\.]+\s*/, '').trim();
+            if (!inBulletList) {
+                htmlParts.push('<ul class="resume-bullet-list">');
+                inBulletList = true;
+            }
+            htmlParts.push(`<li>${escapeHtml(bulletContent)}</li>`);
+            continue;
+        }
+
+        if (inBulletList) {
+            htmlParts.push('</ul>');
+            inBulletList = false;
+        }
+
+        // Subfield (e.g. "Languages: Python, Java...")
+        if (line.includes(':') && line.split(':')[0].split(/\s+/).length <= 4) {
+            const parts = line.split(/:(.+)/);
+            htmlParts.push(`<p class="resume-subfield"><strong>${escapeHtml(parts[0].trim())}:</strong> ${escapeHtml((parts[1] || '').trim())}</p>`);
+        } else {
+            htmlParts.push(`<p class="resume-text">${escapeHtml(line)}</p>`);
+        }
+    }
+
+    if (inBulletList) {
+        htmlParts.push('</ul>');
+    }
+
+    return htmlParts.join('\n');
 }
 
 // EXPORT & COPY ACTION HANDLERS
@@ -488,10 +670,8 @@ Missing Critical Skills: ${missing}
     document.getElementById('btnTransferToCoverLetter')?.addEventListener('click', () => {
         if (!lastAnalysisResult) return;
 
-        // Switch Tab to Cover Letter
         document.getElementById('navCoverLetter').click();
 
-        // Populate fields
         const targetRoleInput = document.getElementById('clTargetRole');
         const resumeInput = document.getElementById('clResumeText');
         const jdInput = document.getElementById('clJobDesc');

@@ -198,6 +198,8 @@ def generate_summary_text(overall_score, missing_count, ats_score):
     else:
         return f"Needs revision ({overall_score}%). Update your resume with the missing job keywords and rewritten bullet points to pass ATS screening."
 
+from services.resume_formatter import clean_and_normalize_resume_text
+
 def generate_optimized_resume(resume_text, missing_skills, bullet_improvements, target_job_title="Software Engineer"):
     """
     Constructs a complete, ATS-optimized version of the candidate's resume:
@@ -205,39 +207,38 @@ def generate_optimized_resume(resume_text, missing_skills, bullet_improvements, 
     - Replaces weak bullet points with optimized power-verb versions.
     - Formats all sections in a standard ATS layout.
     """
+    normalized_input = clean_and_normalize_resume_text(resume_text)
+
     gemini_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
     if gemini_key:
         try:
             from google import genai
             client = genai.Client(api_key=gemini_key)
             prompt = f"""
-            You are an expert resume optimizer. Rewrite the following candidate resume for the role '{target_job_title}'.
-            
-            Instructions:
-            1. Integrate these missing critical keywords into the Skills or Experience section: {', '.join(missing_skills)}.
-            2. Upgrade weak bullet points with strong action verbs and quantified achievements.
-            3. Maintain a clean, professional ATS format with clear section headings:
-               - CONTACT INFORMATION
-               - PROFESSIONAL SUMMARY
-               - TECHNICAL SKILLS
-               - PROFESSIONAL EXPERIENCE
-               - EDUCATION & CERTIFICATIONS
-            4. Return ONLY the plain text of the rewritten resume (ready to copy and download).
+            You are an expert technical resume writer and ATS specialist.
+            Rewrite and enhance this candidate's resume for the role '{target_job_title}'.
 
-            Original Resume:
-            {resume_text[:3000]}
+            Candidate Resume:
+            {normalized_input[:3000]}
+
+            Instructions:
+            1. Integrate these missing critical keywords into the Skills section: {', '.join(missing_skills)}.
+            2. Upgrade all weak bullet points with strong action verbs and quantified impact metrics.
+            3. Ensure standard, clean ATS section headers (PROFILE, TECHNICAL SKILLS, EXPERIENCE, PROJECTS, EDUCATION).
+            4. Keep contact information clean and centered at the top.
+            5. Return ONLY the plain text of the rewritten resume.
             """
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
             )
             if response.text and len(response.text.strip()) > 100:
-                return response.text.strip()
+                return clean_and_normalize_resume_text(response.text.strip())
         except Exception:
             pass
 
     # Intelligent Rule-Based Reconstructor
-    lines = resume_text.strip().split('\n')
+    lines = normalized_input.strip().split('\n')
     output_lines = []
     skills_injected = False
     bullet_map = {b['original'].strip().lower(): b['revised'].strip() for b in bullet_improvements if 'original' in b and 'revised' in b}
@@ -248,12 +249,14 @@ def generate_optimized_resume(resume_text, missing_skills, bullet_improvements, 
             output_lines.append("")
             continue
 
-        # Check if this line is in the Skills section
-        if re.search(r'\b(skills|technologies|tech stack)\b', trimmed, re.IGNORECASE) and not skills_injected:
-            output_lines.append(trimmed)
-            if missing_skills:
+        clean_upper = trimmed.upper().rstrip(':')
+
+        # Section Header check
+        if clean_upper in ['TECHNICAL SKILLS', 'SKILLS', 'CORE COMPETENCIES', 'TECHNOLOGIES']:
+            output_lines.append(clean_upper)
+            if missing_skills and not skills_injected:
                 output_lines.append(f"• Additional Target Competencies: {', '.join(missing_skills)}")
-            skills_injected = True
+                skills_injected = True
             continue
 
         # Check if line matches any weak bullet to replace
@@ -268,11 +271,11 @@ def generate_optimized_resume(resume_text, missing_skills, bullet_improvements, 
         if not replaced:
             output_lines.append(trimmed)
 
-    # If no skills section was found, add a clean section at the top
+    # If no skills section was found, add a clean section
     if not skills_injected and missing_skills:
-        output_lines.insert(3, f"\nTECHNICAL SKILLS & KEYWORDS\n• Core Competencies: {', '.join(missing_skills)}\n")
+        output_lines.insert(3, f"\nTECHNICAL SKILLS\n• Additional Target Competencies: {', '.join(missing_skills)}\n")
 
-    return "\n".join(output_lines)
+    return clean_and_normalize_resume_text("\n".join(output_lines))
 
 def generate_cover_letter(resume_text, job_description, target_job_title="Software Engineer", tone="Professional"):
     gemini_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')

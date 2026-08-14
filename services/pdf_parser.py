@@ -2,6 +2,7 @@ import re
 import io
 from pypdf import PdfReader
 import docx
+from services.resume_formatter import clean_and_normalize_resume_text
 
 def extract_text_from_file(file_stream, filename="resume.pdf"):
     """
@@ -28,7 +29,8 @@ def extract_text_from_pdf(pdf_file_stream):
             if page_text:
                 text_content.append(page_text)
                 
-        full_text = "\n".join(text_content)
+        raw_full_text = "\n".join(text_content)
+        full_text = clean_and_normalize_resume_text(raw_full_text)
         words = re.findall(r'\b\w+\b', full_text)
         word_count = len(words)
         
