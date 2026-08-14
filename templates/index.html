@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body data-theme="dark">
     <div class="app-container">
@@ -68,8 +70,24 @@
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                     </svg>
                 </button>
-                <div class="header-status">
-                    <span class="db-indicator active" id="dbStatus">Database Connected</span>
+
+                <!-- Auth Controls in Header -->
+                <div class="auth-header-wrapper">
+                    <!-- Logged Out State -->
+                    <div id="authLoggedOut" class="auth-header-state">
+                        <button class="btn btn-outline btn-sm" id="btnOpenAuthModal">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            Sign In / Sign Up
+                        </button>
+                    </div>
+                    <!-- Logged In State -->
+                    <div id="authLoggedIn" class="auth-header-state hidden">
+                        <div class="user-pill">
+                            <div class="user-avatar" id="headerUserAvatar">U</div>
+                            <span class="user-name" id="headerUserName">User</span>
+                            <button class="btn btn-link btn-xs text-muted" id="btnLogout" title="Log out of account">Log out</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -375,15 +393,26 @@
             </section>
 
 
-            <!-- TAB 4: SCAN HISTORY -->
+            <!-- TAB 4: PRIVATE SCAN HISTORY -->
             <section id="tab-history" class="tab-pane">
                 <div class="panel single-panel">
                     <div class="panel-header">
-                        <h2>Saved Scan History</h2>
-                        <p>Review past ATS evaluations stored in your database.</p>
+                        <h2>🔒 My Private Scan History</h2>
+                        <p>Your confidential ATS evaluations and resume scan records.</p>
                     </div>
 
-                    <div class="table-container">
+                    <!-- Not Logged In Prompt -->
+                    <div id="historyAuthPrompt" class="auth-history-prompt hidden">
+                        <div class="prompt-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        </div>
+                        <h3>Private Scan History</h3>
+                        <p>Sign in to securely access, save, and manage your past ATS resume evaluations.</p>
+                        <button class="btn btn-primary mt-3" id="btnPromptSignIn">Sign In / Sign Up</button>
+                    </div>
+
+                    <!-- History Table Container (Visible when logged in) -->
+                    <div id="historyTableWrapper" class="table-container">
                         <table class="history-table">
                             <thead>
                                 <tr>
@@ -398,7 +427,7 @@
                             </thead>
                             <tbody id="historyTableBody">
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">Loading history...</td>
+                                    <td colspan="7" class="text-center py-4 text-muted">Loading your private history...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -407,6 +436,77 @@
             </section>
 
         </main>
+    </div>
+
+    <!-- AUTHENTICATION MODAL DIALOG -->
+    <div id="authModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <button class="modal-close" id="btnCloseAuthModal">&times;</button>
+            
+            <div class="modal-header">
+                <h3 id="modalAuthTitle">Welcome to AI Career Copilot</h3>
+                <p id="modalAuthSubtitle">Sign in or create an account to save your private resume evaluations.</p>
+            </div>
+
+            <!-- Modal Nav Tabs: Sign In / Create Account -->
+            <div class="modal-tabs">
+                <button class="modal-tab active" id="tabBtnSignIn">Sign In</button>
+                <button class="modal-tab" id="tabBtnSignUp">Create Account</button>
+            </div>
+
+            <!-- Google Sign-In Action -->
+            <div class="google-auth-box">
+                <button type="button" class="btn btn-google" id="btnGoogleAuth">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </div>
+
+            <div class="divider"><span>OR WITH EMAIL</span></div>
+
+            <div id="authAlert" class="auth-alert hidden"></div>
+
+            <!-- Sign In Form -->
+            <form id="formSignIn">
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="name@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btnSubmitLogin">
+                    <span class="btn-text">Sign In</span>
+                    <div class="spinner hidden" id="spinnerLogin"></div>
+                </button>
+            </form>
+
+            <!-- Sign Up Form (Hidden initially) -->
+            <form id="formSignUp" class="hidden">
+                <div class="form-group">
+                    <label for="registerName">Full Name</label>
+                    <input type="text" id="registerName" class="form-control" placeholder="e.g. Alex Johnson" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email Address</label>
+                    <input type="email" id="registerEmail" class="form-control" placeholder="name@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password (min 6 characters)</label>
+                    <input type="password" id="registerPassword" class="form-control" placeholder="••••••••" minlength="6" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btnSubmitRegister">
+                    <span class="btn-text">Create Account</span>
+                    <div class="spinner hidden" id="spinnerRegister"></div>
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Global Toast Container -->

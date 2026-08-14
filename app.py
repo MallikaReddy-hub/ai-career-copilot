@@ -1,15 +1,21 @@
 import os
 import sys
-from flask import Flask, render_template, request, jsonify
+import json
+from flask import Flask, render_template, request, jsonify, session
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Ensure local directories are in python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from database import init_db, save_resume, save_analysis, get_analysis_history, get_analysis_by_id
+from database import (
+    init_db, save_resume, save_analysis, get_analysis_history, get_analysis_by_id,
+    create_user, get_user_by_email, get_user_by_id, get_user_by_google_id, update_user_google_id
+)
 from services.pdf_parser import extract_text_from_file
 from services.analyzer import analyze_resume_vs_jd, generate_bullet_improvements, generate_cover_letter
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'career_copilot_jwt_secure_session_key_2026')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload limit
 
 # Initialize database tables on startup
@@ -23,6 +29,141 @@ with app.app_context():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# ----------------- AUTHENTICATION API ROUTES ----------------- #
+
+@app.route('/api/auth/me', methods=['GET'])
+def get_current_user():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'logged_in': False, 'user': None})
+    
+    user = get_user_by_id(user_id)
+    if not user:
+        session.pop('user_id', None)
+        return jsonify({'logged_in': False, 'user': None})
+        
+    return jsonify({
+        'logged_in': True,
+        'user': {
+            'id': user['id'],
+            'email': user['email'],
+            'name': user['name'] or user['email'].split('@')[0]
+        }
+    })
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    try:
+        data = request.get_json() or {}
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '').strip()
+        name = data.get('name', '').strip() or email.split('@')[0]
+
+        if not email or not password:
+            return jsonify({'success': False, 'error': 'Email and password are required.'}), 400
+
+        if len(password) < 6:
+            return jsonify({'success': False, 'error': 'Password must be at least 6 characters long.'}), 400
+
+        existing_user = get_user_by_email(email)
+        if existing_user:
+            return jsonify({'success': False, 'error': 'An account with this email already exists. Please sign in.'}), 400
+
+        pwd_hash = generate_password_hash(password)
+        user_id = create_user(email=email, password_hash=pwd_hash, name=name)
+
+        session['user_id'] = user_id
+        session.permanent = True
+
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user_id,
+                'email': email,
+                'name': name
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Registration error: {str(e)}"}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    try:
+        data = request.get_json() or {}
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '').strip()
+
+        if not email or not password:
+            return jsonify({'success': False, 'error': 'Email and password are required.'}), 400
+
+        user = get_user_by_email(email)
+        if not user or not user.get('password_hash'):
+            return jsonify({'success': False, 'error': 'Invalid email or password.'}), 401
+
+        if not check_password_hash(user['password_hash'], password):
+            return jsonify({'success': False, 'error': 'Invalid email or password.'}), 401
+
+        session['user_id'] = user['id']
+        session.permanent = True
+
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user['id'],
+                'email': user['email'],
+                'name': user['name'] or user['email'].split('@')[0]
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Login error: {str(e)}"}), 500
+
+@app.route('/api/auth/google', methods=['POST'])
+def google_auth():
+    """
+    Handles Google Sign-In authentication.
+    Accepts credential payload from Google Identity Services or profile info.
+    """
+    try:
+        data = request.get_json() or {}
+        email = data.get('email', '').strip().lower()
+        name = data.get('name', '').strip()
+        google_id = data.get('google_id', '').strip()
+
+        if not email:
+            return jsonify({'success': False, 'error': 'Google profile email is missing.'}), 400
+
+        # Check if user exists by email or google_id
+        user = get_user_by_email(email)
+        if user:
+            if google_id and not user.get('google_id'):
+                update_user_google_id(user['id'], google_id)
+            user_id = user['id']
+            user_name = user['name'] or name or email.split('@')[0]
+        else:
+            user_name = name or email.split('@')[0]
+            user_id = create_user(email=email, password_hash=None, name=user_name, google_id=google_id)
+
+        session['user_id'] = user_id
+        session.permanent = True
+
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user_id,
+                'email': email,
+                'name': user_name
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Google Sign-In failed: {str(e)}"}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    session.pop('user_id', None)
+    return jsonify({'success': True, 'message': 'Logged out successfully'})
+
+# ----------------- SCAN & RESUME ANALYSIS ROUTES ----------------- #
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
@@ -59,12 +200,15 @@ def analyze():
             words = extracted_text.split()
             word_count = len(words)
 
+        current_user_id = session.get('user_id')
+
         # Save Resume Record
         resume_id = save_resume(
             filename=filename,
             file_path=file_path,
             raw_text=extracted_text,
-            word_count=word_count
+            word_count=word_count,
+            user_id=current_user_id
         )
 
         # Run Analysis Algorithm
@@ -74,7 +218,7 @@ def analyze():
             target_job_title=target_job_title
         )
 
-        # Save Analysis to DB
+        # Save Analysis to DB linked to current user
         analysis_id = save_analysis(
             resume_id=resume_id,
             target_job_title=target_job_title,
@@ -85,7 +229,8 @@ def analyze():
             summary=analysis_data['summary_feedback'],
             missing_skills=analysis_data['missing_critical_skills'],
             present_skills=analysis_data['present_matching_skills'],
-            bullet_improvements=analysis_data['bullet_improvements']
+            bullet_improvements=analysis_data['bullet_improvements'],
+            user_id=current_user_id
         )
 
         analysis_data['id'] = analysis_id
@@ -103,15 +248,21 @@ def analyze():
 @app.route('/api/history', methods=['GET'])
 def history():
     try:
-        scans = get_analysis_history(limit=20)
-        return jsonify({'success': True, 'scans': scans})
+        user_id = session.get('user_id')
+        if not user_id:
+            # If user is not logged in, return empty list so no public scans are shown
+            return jsonify({'success': True, 'scans': [], 'authenticated': False})
+
+        scans = get_analysis_history(user_id=user_id, limit=20)
+        return jsonify({'success': True, 'scans': scans, 'authenticated': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/analysis/<int:analysis_id>', methods=['GET'])
 def get_analysis(analysis_id):
     try:
-        data = get_analysis_by_id(analysis_id)
+        user_id = session.get('user_id')
+        data = get_analysis_by_id(analysis_id, user_id=user_id)
         if not data:
             return jsonify({'success': False, 'error': 'Analysis record not found'}), 404
         data['success'] = True

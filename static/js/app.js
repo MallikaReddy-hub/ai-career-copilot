@@ -1,16 +1,18 @@
 // AI Career Copilot - Frontend Application Logic
 
 let lastAnalysisResult = null;
+let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    initAuth();
     initNavigation();
     initFileUpload();
     initFormSubmission();
     initSingleOptimizer();
     initCoverLetterGenerator();
     initExportAndCopyActions();
-    loadScanHistory();
+    checkAuthState();
 });
 
 // THEME TOGGLE (Dark / Light Mode)
@@ -61,6 +63,239 @@ function showToast(message, type = 'info') {
         toast.style.transform = 'translateY(10px)';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// AUTHENTICATION MANAGEMENT
+function initAuth() {
+    const modal = document.getElementById('authModal');
+    const btnOpen = document.getElementById('btnOpenAuthModal');
+    const btnPromptOpen = document.getElementById('btnPromptSignIn');
+    const btnClose = document.getElementById('btnCloseAuthModal');
+
+    const tabSignIn = document.getElementById('tabBtnSignIn');
+    const tabSignUp = document.getElementById('tabBtnSignUp');
+    const formSignIn = document.getElementById('formSignIn');
+    const formSignUp = document.getElementById('formSignUp');
+    const authAlert = document.getElementById('authAlert');
+
+    const btnLogout = document.getElementById('btnLogout');
+    const btnGoogle = document.getElementById('btnGoogleAuth');
+
+    // Open Modal
+    function openModal(defaultTab = 'signin') {
+        modal.classList.remove('hidden');
+        authAlert.classList.add('hidden');
+        if (defaultTab === 'signup') {
+            switchToSignUp();
+        } else {
+            switchToSignIn();
+        }
+    }
+
+    // Close Modal
+    function closeModal() {
+        modal.classList.add('hidden');
+        authAlert.classList.add('hidden');
+    }
+
+    btnOpen?.addEventListener('click', () => openModal('signin'));
+    btnPromptOpen?.addEventListener('click', () => openModal('signin'));
+    btnClose?.addEventListener('click', closeModal);
+
+    modal?.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // Tab Switching
+    function switchToSignIn() {
+        tabSignIn.classList.add('active');
+        tabSignUp.classList.remove('active');
+        formSignIn.classList.remove('hidden');
+        formSignUp.classList.add('hidden');
+        document.getElementById('modalAuthTitle').textContent = 'Welcome to AI Career Copilot';
+        document.getElementById('modalAuthSubtitle').textContent = 'Sign in to access your private resume evaluation history.';
+        authAlert.classList.add('hidden');
+    }
+
+    function switchToSignUp() {
+        tabSignUp.classList.add('active');
+        tabSignIn.classList.remove('active');
+        formSignUp.classList.remove('hidden');
+        formSignIn.classList.add('hidden');
+        document.getElementById('modalAuthTitle').textContent = 'Create Your Free Account';
+        document.getElementById('modalAuthSubtitle').textContent = 'Save your tailored resumes, cover letters, and private scan reports.';
+        authAlert.classList.add('hidden');
+    }
+
+    tabSignIn?.addEventListener('click', switchToSignIn);
+    tabSignUp?.addEventListener('click', switchToSignUp);
+
+    // Sign In Form Submission
+    formSignIn?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const btn = document.getElementById('btnSubmitLogin');
+        const spinner = document.getElementById('spinnerLogin');
+        const btnText = btn.querySelector('.btn-text');
+
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        btnText.textContent = 'Signing in...';
+        authAlert.classList.add('hidden');
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (data.success && data.user) {
+                currentUser = data.user;
+                updateAuthUI();
+                closeModal();
+                showToast(`Welcome back, ${data.user.name || 'Candidate'}!`);
+                loadScanHistory();
+            } else {
+                authAlert.textContent = data.error || 'Failed to sign in. Please check your credentials.';
+                authAlert.classList.remove('hidden');
+            }
+        } catch (err) {
+            authAlert.textContent = 'Network connection error: ' + err.message;
+            authAlert.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            btnText.textContent = 'Sign In';
+        }
+    });
+
+    // Sign Up Form Submission
+    formSignUp?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('registerName').value.trim();
+        const email = document.getElementById('registerEmail').value.trim();
+        const password = document.getElementById('registerPassword').value.trim();
+        const btn = document.getElementById('btnSubmitRegister');
+        const spinner = document.getElementById('spinnerRegister');
+        const btnText = btn.querySelector('.btn-text');
+
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        btnText.textContent = 'Creating account...';
+        authAlert.classList.add('hidden');
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+            const data = await res.json();
+
+            if (data.success && data.user) {
+                currentUser = data.user;
+                updateAuthUI();
+                closeModal();
+                showToast(`Account created! Welcome, ${data.user.name || 'Candidate'}!`);
+                loadScanHistory();
+            } else {
+                authAlert.textContent = data.error || 'Failed to create account.';
+                authAlert.classList.remove('hidden');
+            }
+        } catch (err) {
+            authAlert.textContent = 'Network connection error: ' + err.message;
+            authAlert.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            btnText.textContent = 'Create Account';
+        }
+    });
+
+    // Google Sign In Button
+    btnGoogle?.addEventListener('click', async () => {
+        // Prompt for Google account email or use Google Identity Services
+        const userEmail = prompt('Enter your Google email to sign in:');
+        if (!userEmail || !userEmail.includes('@')) return;
+
+        const userName = userEmail.split('@')[0];
+
+        try {
+            const res = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: userEmail,
+                    name: userName,
+                    google_id: 'g_' + btoa(userEmail)
+                })
+            });
+            const data = await res.json();
+
+            if (data.success && data.user) {
+                currentUser = data.user;
+                updateAuthUI();
+                closeModal();
+                showToast(`Signed in with Google as ${data.user.name}!`);
+                loadScanHistory();
+            } else {
+                alert(data.error || 'Google Sign-In failed.');
+            }
+        } catch (err) {
+            alert('Google authentication error: ' + err.message);
+        }
+    });
+
+    // Logout
+    btnLogout?.addEventListener('click', async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            currentUser = null;
+            updateAuthUI();
+            showToast('Logged out successfully');
+            loadScanHistory();
+        } catch (e) {
+            alert('Logout error.');
+        }
+    });
+}
+
+// Check if user is logged in
+async function checkAuthState() {
+    try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.logged_in && data.user) {
+            currentUser = data.user;
+        } else {
+            currentUser = null;
+        }
+    } catch (e) {
+        currentUser = null;
+    } finally {
+        updateAuthUI();
+        loadScanHistory();
+    }
+}
+
+function updateAuthUI() {
+    const loggedOutDiv = document.getElementById('authLoggedOut');
+    const loggedInDiv = document.getElementById('authLoggedIn');
+    const userNameSpan = document.getElementById('headerUserName');
+    const userAvatar = document.getElementById('headerUserAvatar');
+
+    if (currentUser) {
+        loggedOutDiv?.classList.add('hidden');
+        loggedInDiv?.classList.remove('hidden');
+        if (userNameSpan) userNameSpan.textContent = currentUser.name || currentUser.email;
+        if (userAvatar) userAvatar.textContent = (currentUser.name || currentUser.email).charAt(0).toUpperCase();
+    } else {
+        loggedOutDiv?.classList.remove('hidden');
+        loggedInDiv?.classList.add('hidden');
+    }
 }
 
 // TAB NAVIGATION
@@ -508,14 +743,26 @@ function initCoverLetterGenerator() {
     });
 }
 
-// SCAN HISTORY TABLE
+// PRIVATE SCAN HISTORY TABLE
 async function loadScanHistory() {
     const tbody = document.getElementById('historyTableBody');
+    const promptBox = document.getElementById('historyAuthPrompt');
+    const tableWrapper = document.getElementById('historyTableWrapper');
+
+    if (!currentUser) {
+        promptBox?.classList.remove('hidden');
+        tableWrapper?.classList.add('hidden');
+        return;
+    }
+
+    promptBox?.classList.add('hidden');
+    tableWrapper?.classList.remove('hidden');
+
     try {
         const res = await fetch('/api/history');
         const data = await res.json();
 
-        if (data.success && data.scans.length > 0) {
+        if (data.success && data.scans && data.scans.length > 0) {
             tbody.innerHTML = '';
             data.scans.forEach(scan => {
                 const tr = document.createElement('tr');
@@ -531,10 +778,10 @@ async function loadScanHistory() {
                 tbody.appendChild(tr);
             });
         } else {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No scan history records found in database yet. Run an analysis above to see records!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No scan history records found for your account yet. Run an ATS analysis to save your first private report!</td></tr>';
         }
     } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Could not load scan history.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Could not load private scan history.</td></tr>';
     }
 }
 
