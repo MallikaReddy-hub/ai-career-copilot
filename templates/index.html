@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Career Copilot | ATS Resume & Job Match Intelligence</title>
-    <meta name="description" content="Production-grade AI ATS resume analyzer, skill gap scanner, optimized resume generator, and cover letter creator.">
+    <meta name="description" content="Production-grade AI ATS resume analyzer, skill gap scanner, bullet optimizer, and cover letter creator.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,10 +36,6 @@
                 <button class="nav-btn active" data-tab="tab-analyze" id="navAnalyze">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     Job Matcher
-                </button>
-                <button class="nav-btn" data-tab="tab-optimized-resume" id="navOptimizedResume">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-                    Optimized Resume
                 </button>
                 <button class="nav-btn" data-tab="tab-bullet" id="navBullet">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
@@ -151,7 +147,7 @@
                                 <line x1="9" y1="21" x2="9" y2="9"></line>
                             </svg>
                             <h3>Ready for Analysis</h3>
-                            <p>Upload a resume and paste a job description on the left to compute ATS compatibility, missing keywords, and generate an updated resume.</p>
+                            <p>Upload a resume and paste a job description on the left to compute ATS compatibility, missing keywords, and recommended bullet improvements.</p>
                         </div>
 
                         <!-- Active Dashboard Results (Hidden initially) -->
@@ -164,7 +160,7 @@
                                 <div class="dashboard-top-actions">
                                     <button class="btn btn-outline btn-sm" id="btnExportPdf" title="Print or Save as PDF Report">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                                        Export Report PDF
+                                        Export PDF Report
                                     </button>
                                     <button class="btn btn-outline btn-sm" id="btnCopyReport" title="Copy full analysis summary">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -206,20 +202,24 @@
                                 <p id="summaryText">Strong match. Resume shows solid technical keyword coverage.</p>
                             </div>
 
-                            <!-- Optimized Resume Banner Callout -->
-                            <div class="optimized-resume-callout">
-                                <div class="callout-left">
-                                    <strong>✨ Download Your Optimized Resume</strong>
-                                    <p>We've automatically added missing skills and upgraded weak bullets into a new executive ATS-ready resume.</p>
+                            <!-- Quick Guide Legend Box -->
+                            <div class="quick-guide-box mb-4">
+                                <div class="guide-item">
+                                    <span class="guide-badge bg-green-light">1. Matching Skills</span>
+                                    <p>Keywords found in both your resume & job listing.</p>
                                 </div>
-                                <button class="btn btn-primary btn-sm" id="btnGoToOptimizedResume">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                    View & Download Resume
-                                </button>
+                                <div class="guide-item">
+                                    <span class="guide-badge bg-amber-light">2. Missing Skills</span>
+                                    <p>Required keywords missing from resume (Add these to pass ATS).</p>
+                                </div>
+                                <div class="guide-item">
+                                    <span class="guide-badge bg-blue-light">3. Improved Bullets</span>
+                                    <p>Stronger rewrites of your resume points with action verbs.</p>
+                                </div>
                             </div>
 
                             <!-- Skills Breakdown Section -->
-                            <div class="skills-container mt-4">
+                            <div class="skills-container">
                                 <div class="section-title-row">
                                     <h3>Skill Gap Breakdown</h3>
                                     <button class="btn btn-link btn-xs" id="btnCopyMissing">Copy Missing Skills</button>
@@ -270,60 +270,7 @@
             </section>
 
 
-            <!-- TAB 2: OPTIMIZED RESUME DOWNLOAD -->
-            <section id="tab-optimized-resume" class="tab-pane">
-                <div class="panel single-panel">
-                    <div class="panel-header">
-                        <h2>📥 Your Optimized ATS Resume</h2>
-                        <p>Formatted in executive ATS layout with keywords integrated and power verbs applied.</p>
-                    </div>
-
-                    <div class="optimized-resume-actions-bar">
-                        <div class="view-mode-toggle">
-                            <button class="btn btn-secondary btn-sm active" id="btnViewVisual">
-                                📄 Formatted Document
-                            </button>
-                            <button class="btn btn-outline btn-sm" id="btnViewEditor">
-                                ✏️ Raw Text Editor
-                            </button>
-                        </div>
-                        
-                        <div class="download-buttons-group">
-                            <button class="btn btn-primary btn-sm" id="btnDownloadDocx">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                Download .DOCX (Word)
-                            </button>
-                            <button class="btn btn-secondary btn-sm" id="btnPrintResume">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                                Print / PDF
-                            </button>
-                            <button class="btn btn-outline btn-sm" id="btnDownloadTxt">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                                Download .TXT
-                            </button>
-                            <button class="btn btn-outline btn-sm" id="btnCopyOptimizedResume">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                Copy All
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Visual Formatted Paper Preview -->
-                    <div id="optimizedResumeVisualWrapper" class="visual-preview-container">
-                        <div class="resume-paper" id="optimizedResumeVisual">
-                            <p class="text-center text-muted" style="padding: 40px 0;">Upload and analyze your resume on the Job Matcher tab to generate your styled executive resume preview.</p>
-                        </div>
-                    </div>
-
-                    <!-- Raw Text Editor View (Hidden by default) -->
-                    <div id="optimizedResumeEditorWrapper" class="hidden mt-3">
-                        <textarea id="optimizedResumeEditor" class="form-control optimized-resume-textarea" rows="22" placeholder="Upload and analyze your resume on the Job Matcher tab to view and download your optimized resume here..."></textarea>
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- TAB 3: BULLET POINT OPTIMIZER -->
+            <!-- TAB 2: BULLET POINT OPTIMIZER -->
             <section id="tab-bullet" class="tab-pane">
                 <div class="panel single-panel">
                     <div class="panel-header">
@@ -364,7 +311,7 @@
             </section>
 
 
-            <!-- TAB 4: COVER LETTER GENERATOR -->
+            <!-- TAB 3: COVER LETTER GENERATOR -->
             <section id="tab-cover-letter" class="tab-pane">
                 <div class="panel single-panel">
                     <div class="panel-header">
@@ -428,7 +375,7 @@
             </section>
 
 
-            <!-- TAB 5: SCAN HISTORY -->
+            <!-- TAB 4: SCAN HISTORY -->
             <section id="tab-history" class="tab-pane">
                 <div class="panel single-panel">
                     <div class="panel-header">
