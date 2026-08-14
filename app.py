@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify
 
 # Ensure local directories are in python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -8,7 +8,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from database import init_db, save_resume, save_analysis, get_analysis_history, get_analysis_by_id
 from services.pdf_parser import extract_text_from_file
 from services.analyzer import analyze_resume_vs_jd, generate_bullet_improvements, generate_cover_letter
-from services.docx_generator import create_resume_docx
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload limit
@@ -152,30 +151,6 @@ def cover_letter():
             tone=tone
         )
         return jsonify({'success': True, 'cover_letter': letter})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/download-docx', methods=['POST'])
-def download_docx():
-    try:
-        data = request.get_json() or {}
-        resume_text = data.get('resume_text', '').strip()
-        target_job_title = data.get('target_job_title', 'Software Engineer').strip()
-
-        if not resume_text:
-            return jsonify({'success': False, 'error': 'No resume text provided.'}), 400
-
-        doc_io = create_resume_docx(resume_text, target_job_title)
-        
-        safe_title = "".join([c if c.isalnum() else "_" for c in target_job_title])
-        filename = f"Optimized_Resume_{safe_title}.docx"
-
-        return send_file(
-            doc_io,
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        )
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
