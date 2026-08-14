@@ -11,6 +11,8 @@ MYSQL_DB = os.environ.get('MYSQL_DATABASE', 'career_copilot_db')
 
 import tempfile
 
+USE_MYSQL = False
+
 def get_db_connection():
     global USE_MYSQL
     if os.environ.get('MYSQL_HOST') and os.environ.get('MYSQL_USER') and os.environ.get('MYSQL_HOST') != 'localhost':
