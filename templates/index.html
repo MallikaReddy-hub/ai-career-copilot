@@ -138,6 +138,12 @@
                                 <button class="btn btn-secondary btn-sm" id="btnReanalyze">New Analysis</button>
                             </div>
 
+                            <!-- What is ATS Score Explainer Banner -->
+                            <div class="ats-explainer-banner">
+                                <strong>❓ What is an ATS Score?</strong>
+                                <p>An <strong>Applicant Tracking System (ATS) Score</strong> measures how well automated resume screening software parses your PDF layout, extracts technical skills, and matches your experience against job requirements before a recruiter sees your resume.</p>
+                            </div>
+
                             <!-- Key Metrics Score Cards Grid -->
                             <div class="metrics-grid">
                                 <div class="metric-card">
@@ -236,10 +242,10 @@
 
                     <div class="optimizer-box">
                         <div class="form-group">
-                            <label for="singleBulletInput">Original Bullet Point</label>
-                            <input type="text" id="singleBulletInput" placeholder="e.g. Responsible for managing the MySQL database and writing API routes." class="form-control">
+                            <label for="singleBulletInput">Original Resume Bullet Point</label>
+                            <textarea id="singleBulletInput" rows="3" placeholder="e.g. Worked on backend APIs and database tables for user authentication." class="form-control"></textarea>
                         </div>
-                        <button class="btn btn-primary" id="btnOptimizeSingle">Rewrite & Optimize</button>
+                        <button class="btn btn-primary" id="btnOptimizeSingle">Rewrite & Optimize Bullet</button>
                     </div>
 
                     <div class="optimizer-result hidden" id="optimizerResult">

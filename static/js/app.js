@@ -120,7 +120,7 @@ function initFormSubmission() {
         // Show loading spinner
         spinner.classList.remove('hidden');
         btnText.textContent = 'Parsing & Analyzing...';
-        btnSubmit.disabled = True = true;
+        btnSubmit.disabled = true;
 
         try {
             const response = await fetch('/api/analyze', {
@@ -255,7 +255,10 @@ function initSingleOptimizer() {
 
     btn.addEventListener('click', async () => {
         const text = input.value.trim();
-        if (!text) return;
+        if (!text) {
+            alert('Please paste a bullet point from your resume to optimize.');
+            return;
+        }
 
         btn.disabled = true;
         btn.textContent = 'Optimizing...';
@@ -273,12 +276,14 @@ function initSingleOptimizer() {
                 document.getElementById('optOriginalText').textContent = data.result.original;
                 document.getElementById('optRevisedText').textContent = data.result.revised;
                 document.getElementById('optReasonText').textContent = '💡 ' + (data.result.reason || '');
+            } else {
+                alert(data.error || 'Failed to optimize bullet point.');
             }
         } catch (e) {
             alert('Failed to optimize bullet.');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Rewrite & Optimize';
+            btn.textContent = 'Rewrite & Optimize Bullet';
         }
     });
 
@@ -308,12 +313,12 @@ async function loadScanHistory() {
                     <td><span class="pill pill-green">${scan.overall_match_score}%</span></td>
                     <td><span class="pill pill-amber">${scan.ats_formatting_score}%</span></td>
                     <td>${scan.analyzed_at ? scan.analyzed_at.substring(0, 16) : ''}</td>
-                    <td><button class="btn btn-secondary btn-sm" onclick="viewHistoryItem(${scan.id})">View Report</button></td>
+                    <td><button class="btn btn-secondary btn-sm" onclick="window.viewHistoryItem(${scan.id})">View Report</button></td>
                 `;
                 tbody.appendChild(tr);
             });
         } else {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No scan history records found in database yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No scan history records found in database yet. Run an analysis above to see records!</td></tr>';
         }
     } catch (e) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Could not load scan history.</td></tr>';
@@ -333,6 +338,8 @@ async function viewHistoryItem(id) {
         alert('Failed to load analysis record.');
     }
 }
+
+window.viewHistoryItem = viewHistoryItem;
 
 function escapeHtml(str) {
     if (!str) return '';
